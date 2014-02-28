@@ -7,6 +7,26 @@
  */
 package org.duracloud.snapshot.rest;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.util.Properties;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
+
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.duracloud.snapshot.spring.batch.DatabaseInitializer;
@@ -23,24 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 
 /**
  * Defines the REST resource layer for interacting with the Snapshot processing
@@ -165,8 +167,10 @@ public class SnapshotResource {
             }
         }
         
-        if(!wdir.canWrite()){
-            throw new RuntimeException(wdir.getAbsolutePath() + " must be writable.");
+        java.nio.file.Path dirPath = java.nio.file.Paths.get(wdir.getAbsolutePath());
+        if (!Files.isWritable(dirPath)) {
+            throw new RuntimeException(wdir.getAbsolutePath()
+                + " must be writable.");
         }
 
         return wdir;

@@ -45,10 +45,8 @@ public class SnapshotResourceTest extends SnapshotTestBase {
     private String[] dpnEmailAddresses = {"dpn-email"};
     private String duracloudUsername = "duracloud-username";
     private String duracloudPassword = "duracloud-password";
-    private File workDir = new File(System.getProperty("java.io.tmpdir")
-        + "snapshot-work");
-    private File contentDirRoot = new File(System.getProperty("java.io.tmpdir")
-        + "snapshot-content");
+    private File workDir;
+    private File contentDirRoot;
     
     private boolean clean = true;
 
@@ -68,6 +66,12 @@ public class SnapshotResourceTest extends SnapshotTestBase {
     public void setup() {
         super.setup();
         resource = new SnapshotResource(manager, initializer, executionListener);
+        workDir = new File(getDefaultTempDirPath(), "snapshot-work");
+        contentDirRoot = new File(getDefaultTempDirPath(), "snapshot-content");
+    }
+
+    private String getDefaultTempDirPath() {
+        return System.getProperty("java.io.tmpdir");
     }
     
     @Test
