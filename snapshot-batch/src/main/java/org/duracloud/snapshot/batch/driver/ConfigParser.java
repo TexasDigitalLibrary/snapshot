@@ -5,7 +5,7 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch.driver;
+package org.duracloud.snapshot.batch.driver;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -14,10 +14,10 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.duracloud.snapshot.spring.batch.config.DatabaseConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotNotifyConfig;
+import org.duracloud.snapshot.manager.config.DatabaseConfig;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
 
 import java.io.File;
 

@@ -11,16 +11,22 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.ws.rs.core.Response;
 
+import org.duracloud.appconfig.domain.NotificationConfig;
+import org.duracloud.common.notification.NotificationManager;
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
-import org.duracloud.snapshot.spring.batch.DatabaseInitializer;
-import org.duracloud.snapshot.spring.batch.SnapshotExecutionListener;
-import org.duracloud.snapshot.spring.batch.SnapshotJobManager;
-import org.duracloud.snapshot.spring.batch.config.DatabaseConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotNotifyConfig;
+import org.duracloud.snapshot.manager.SnapshotJobManager;
+import org.duracloud.snapshot.manager.config.DatabaseConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
+import org.duracloud.snapshot.manager.spring.batch.DatabaseInitializer;
+import org.duracloud.snapshot.manager.spring.batch.SnapshotExecutionListener;
+import org.duracloud.snapshot.restoration.RestorationConfig;
+import org.duracloud.snapshot.restoration.SnapshotRestorationManager;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
@@ -60,12 +66,18 @@ public class GeneralResourceTest extends SnapshotTestBase {
 
     @Mock
     private SnapshotJobManager manager;
+
+    @Mock
+    private SnapshotRestorationManager restorationManager;
+
     @TestSubject
     private GeneralResource resource;
     @Mock
     private DatabaseInitializer initializer;
     @Mock
     private SnapshotExecutionListener executionListener;
+    @Mock
+    private NotificationManager notificationManager;
     
     /* (non-Javadoc)
      * @see org.duracloud.snapshot.common.test.EasyMockTestBase#setup()
@@ -73,7 +85,7 @@ public class GeneralResourceTest extends SnapshotTestBase {
     @Override
     public void setup() {
         super.setup();
-        resource = new GeneralResource(manager, initializer, executionListener);
+        resource = new GeneralResource(manager, restorationManager, initializer, executionListener, notificationManager);
     }
     
     @Test
@@ -89,12 +101,22 @@ public class GeneralResourceTest extends SnapshotTestBase {
         Capture<SnapshotJobManagerConfig> duracloudConfigCapture = new Capture<>();
         manager.init(EasyMock.capture(duracloudConfigCapture));
         EasyMock.expectLastCall();
+        
+        Capture<RestorationConfig> restorationConfigCapture = new Capture<>();
+        restorationManager.init(EasyMock.capture(restorationConfigCapture));
+        EasyMock.expectLastCall();
+
+        Collection<NotificationConfig> collection = new ArrayList<>();
+        this.notificationManager.initializeNotifiers(EasyMock.isA(collection.getClass()));
+        EasyMock.expectLastCall();
+
 
         replayAll();
 
         InitParams initParams = createInitParams();
         
         resource.init(initParams);
+
 
         DatabaseConfig dbConfig = dbConfigCapture.getValue();
         assertEquals(databaseUser, dbConfig.getUsername());
@@ -118,6 +140,13 @@ public class GeneralResourceTest extends SnapshotTestBase {
         assertEquals(duracloudPassword, jobManagerConfig.getDuracloudPassword());
         assertEquals(contentDirRoot, jobManagerConfig.getContentRootDir());
         assertEquals(workDir, jobManagerConfig.getWorkDir());
+
+        
+        RestorationConfig restorationConfig = restorationConfigCapture.getValue();
+        assertEquals(duracloudEmailAddresses[0],
+                     restorationConfig.getDuracloudEmailAddresses()[0]);
+        assertEquals(dpnEmailAddresses[0],
+                     restorationConfig.getDpnEmailAddresses()[0]);
 
     }
 

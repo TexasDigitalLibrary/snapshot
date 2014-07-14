@@ -10,8 +10,9 @@ package org.duracloud.snapshot.spring.batch;
 import java.io.File;
 
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.spring.batch.SnapshotUtils;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
 import org.junit.Assert;

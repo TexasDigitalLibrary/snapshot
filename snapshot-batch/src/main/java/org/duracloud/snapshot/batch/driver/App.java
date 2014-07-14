@@ -5,16 +5,16 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch.driver;
+package org.duracloud.snapshot.batch.driver;
 
-import org.duracloud.snapshot.spring.batch.DatabaseInitializer;
-import org.duracloud.snapshot.spring.batch.SnapshotExecutionListener;
-import org.duracloud.snapshot.spring.batch.SnapshotJobManager;
-import org.duracloud.snapshot.spring.batch.SnapshotStatus;
-import org.duracloud.snapshot.spring.batch.config.DatabaseConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotNotifyConfig;
+import org.duracloud.snapshot.manager.SnapshotJobManager;
+import org.duracloud.snapshot.manager.SnapshotStatus;
+import org.duracloud.snapshot.manager.config.DatabaseConfig;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
+import org.duracloud.snapshot.manager.spring.batch.DatabaseInitializer;
+import org.duracloud.snapshot.manager.spring.batch.SnapshotExecutionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;

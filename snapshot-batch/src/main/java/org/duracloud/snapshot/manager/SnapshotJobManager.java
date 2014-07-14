@@ -5,12 +5,13 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch;
+package org.duracloud.snapshot.manager;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
 
 /**
  * An interface defining the interaction between the REST
@@ -23,6 +24,7 @@ public interface SnapshotJobManager  {
 
     
     public final static String JOB_REPOSITORY_KEY = "jobRepository";
+    public final static String JOB_EXPLORER_KEY = "jobExplorer";
     public final static String JOB_LAUNCHER_KEY = "jobLauncher";
     
     /**
@@ -39,13 +41,11 @@ public interface SnapshotJobManager  {
      * @param config
      * @return
      */
-    SnapshotStatus executeSnapshotAsync(SnapshotConfig config)
+    Future<SnapshotStatus>  executeSnapshotAsync(SnapshotConfig config)
         throws SnapshotException;
 
     /**
-     * This method creates an underlying job and executes it.  Due to the fact that the underlying
-     * framework does not guarantee that this will be a synchronous call, one cannot assume that 
-     * the returned status will reflect a completed state of the operation. Ack!
+     * This method creates an underlying job and executes it. 
      * @param config
      * @return
      * @throws SnapshotException
@@ -65,7 +65,8 @@ public interface SnapshotJobManager  {
 
     /**
      * @return
+     * @throws SnapshotException 
      */
-    List<SnapshotSummary> getSnapshotList();
+    List<SnapshotSummary> getSnapshotList() throws SnapshotException;
 
 }

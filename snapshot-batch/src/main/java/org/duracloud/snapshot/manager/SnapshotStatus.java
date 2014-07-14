@@ -5,7 +5,7 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch;
+package org.duracloud.snapshot.manager;
 
 /**
  * @author Daniel Bernstein
@@ -13,8 +13,19 @@ package org.duracloud.snapshot.spring.batch;
  */
 public class SnapshotStatus {
     private String id;
-    private String status;
-    
+    public static enum SnapshotStatusType {
+        ABANDONNED,
+        COMPLETED,
+        FAILED,
+        STARTING,
+        STARTED,
+        STOPPING,
+        STOPPED,
+        UNKNOWN;
+    }
+
+    private SnapshotStatusType status;
+
     /**
      * 
      */
@@ -26,7 +37,7 @@ public class SnapshotStatus {
      * @param id
      * @param status
      */
-    public SnapshotStatus(String id, String status) {
+    public SnapshotStatus(String id, SnapshotStatusType status) {
         super();
         this.id = id;
         this.status = status;
@@ -50,14 +61,14 @@ public class SnapshotStatus {
     /**
      * @return the status
      */
-    public String getStatus() {
+    public SnapshotStatusType getStatus() {
         return status;
     }
     
     /**
      * @param status the status to set
      */
-    public void setStatus(String status) {
+    public void setStatus(SnapshotStatusType status) {
         this.status = status;
     }
 }

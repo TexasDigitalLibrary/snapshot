@@ -5,7 +5,7 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch;
+package org.duracloud.snapshot.manager.spring.batch;
 
 import org.duracloud.common.model.ContentItem;
 import org.duracloud.retrieval.source.RetrievalSource;

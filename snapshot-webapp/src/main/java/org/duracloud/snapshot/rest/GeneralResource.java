@@ -10,6 +10,8 @@ package org.duracloud.snapshot.rest;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,12 +27,17 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.lang.StringUtils;
-import org.duracloud.snapshot.spring.batch.DatabaseInitializer;
-import org.duracloud.snapshot.spring.batch.SnapshotExecutionListener;
-import org.duracloud.snapshot.spring.batch.SnapshotJobManager;
-import org.duracloud.snapshot.spring.batch.config.DatabaseConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotNotifyConfig;
+import org.duracloud.appconfig.domain.NotificationConfig;
+import org.duracloud.common.notification.NotificationManager;
+import org.duracloud.common.notification.NotificationType;
+import org.duracloud.snapshot.manager.SnapshotJobManager;
+import org.duracloud.snapshot.manager.config.DatabaseConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
+import org.duracloud.snapshot.manager.spring.batch.DatabaseInitializer;
+import org.duracloud.snapshot.manager.spring.batch.SnapshotExecutionListener;
+import org.duracloud.snapshot.restoration.RestorationConfig;
+import org.duracloud.snapshot.restoration.SnapshotRestorationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,14 +67,20 @@ public class GeneralResource {
     private SnapshotJobManager jobManager;
     private DatabaseInitializer databaseInitializer;
     private SnapshotExecutionListener executionListener;
+    private SnapshotRestorationManager restorationManager;
+    private NotificationManager notificationManager;
     
     @Autowired
     public GeneralResource(SnapshotJobManager jobManager, 
+                            SnapshotRestorationManager restorationManager,
                             DatabaseInitializer databaseInitializer,
-                            SnapshotExecutionListener executionListener) {
+                            SnapshotExecutionListener executionListener,
+                            NotificationManager notificationManager) {
         this.jobManager = jobManager;
+        this.restorationManager = restorationManager;
         this.databaseInitializer = databaseInitializer;
         this.executionListener = executionListener;
+        this.notificationManager = notificationManager;
     }    
     
     @Path("init")
@@ -80,12 +93,44 @@ public class GeneralResource {
             initDatabase(initParams);
             initExecutionListener(initParams);
             initJobManager(initParams);
+            initRestorationResource(initParams);
+            initNotificationManager(initParams);
             return Response.accepted().entity(new ResponseDetails("success!")).build();
         } catch (Exception e) {
             return Response.serverError()
                            .entity(new ResponseDetails("failure!"+e.getMessage()))
                            .build();
         }
+    }
+
+    /**
+     * @param initParams
+     */
+    private void initNotificationManager(InitParams initParams) {
+
+        NotificationConfig notifyConfig = new NotificationConfig();
+        notifyConfig.setType(NotificationType.EMAIL.name());
+        notifyConfig.setUsername(initParams.getAwsAccessKey());
+        notifyConfig.setPassword(initParams.getAwsSecretKey());
+        notifyConfig.setOriginator(
+            initParams.getOriginatorEmailAddress());
+
+        List<NotificationConfig> notifyConfigs = new ArrayList<>();
+        notifyConfigs.add(notifyConfig);
+        notificationManager.initializeNotifiers(notifyConfigs);
+        
+    }
+
+    /**
+     * @param initParams
+     */
+    private void initRestorationResource(InitParams initParams) {
+        RestorationConfig config = new RestorationConfig();
+        config.setRestorationRootDir(initParams.getContentDirRoot()
+            + File.separator + "restorations");
+        config.setDpnEmailAddresses(initParams.getDpnEmailAddresses());
+        config.setDuracloudEmailAddresses(initParams.getDuracloudEmailAddresses());
+        this.restorationManager.init(config);
     }
 
     /**

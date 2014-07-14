@@ -13,7 +13,7 @@
         class="org.duracloud.common.notification.EmailNotifier"/>
 
   <bean id="jobListener"
-        class="org.duracloud.snapshot.spring.batch.SnapshotExecutionListener">
+        class="org.duracloud.snapshot.manager.spring.batch.SnapshotExecutionListener">
     <constructor-arg ref="notificationManager"/>
   </bean>
 
@@ -52,7 +52,7 @@
   </bean>
   
   <bean id="snapshotJobManager" 
-        class="org.duracloud.snapshot.spring.batch.SnapshotJobManagerImpl">
+        class="org.duracloud.snapshot.manager.spring.batch.SnapshotJobManagerImpl">
         <constructor-arg ref="jobListener"/>
         <constructor-arg ref="transactionManager"/>
         <constructor-arg ref="taskExecutor"/>
@@ -71,5 +71,11 @@
     <property name="jobRepository" ref="jobRepository" />
   </bean>
 
+
+  <bean id="jobExplorer"
+    class="org.springframework.batch.core.explore.support.JobExplorerFactoryBean">
+    <property name="dataSource" ref="dataSource" />
+    
+   </bean>
 
 </beans>

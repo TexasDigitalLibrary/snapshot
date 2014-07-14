@@ -5,7 +5,7 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch;
+package org.duracloud.snapshot.manager.spring.batch;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -24,8 +24,10 @@ import org.duracloud.retrieval.mgmt.OutputWriter;
 import org.duracloud.retrieval.source.DuraStoreStitchingRetrievalSource;
 import org.duracloud.retrieval.source.RetrievalSource;
 import org.duracloud.retrieval.util.StoreClientUtil;
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.SnapshotConstants;
+import org.duracloud.snapshot.manager.SnapshotException;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;

@@ -20,7 +20,7 @@
 
   </bean>
   
-  <bean id="databaseInitializer" class="org.duracloud.snapshot.spring.batch.DatabaseInitializer">
+  <bean id="databaseInitializer" class="org.duracloud.snapshot.manager.spring.batch.DatabaseInitializer">
     <constructor-arg name="dataSource" ref="dataSource"/>
     <constructor-arg name="dropSchema" value="classpath:org/springframework/batch/core/schema-drop-mysql.sql"/>
     <constructor-arg name="schema" value="classpath:org/springframework/batch/core/schema-mysql.sql"/>

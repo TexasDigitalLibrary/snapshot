@@ -7,9 +7,20 @@
  */
 package org.duracloud.snapshot.spring.batch;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.SnapshotConstants;
+import org.duracloud.snapshot.manager.SnapshotException;
+import org.duracloud.snapshot.manager.SnapshotNotFoundException;
+import org.duracloud.snapshot.manager.SnapshotSummary;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.spring.batch.SnapshotJobBuilder;
+import org.duracloud.snapshot.manager.spring.batch.SnapshotJobManagerImpl;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
@@ -22,7 +33,10 @@ import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.batch.core.JobInstance;
+import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.ApplicationContext;
@@ -50,6 +64,9 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
 
     @Mock
     private JobRepository jobRepository;
+
+    @Mock
+    private JobExplorer jobExplorer;
 
     @Mock
     private JobLauncher jobLauncher;
@@ -152,5 +169,29 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
                 .andReturn(jobExecution);
         replayAll();
         Assert.assertNotNull(this.manager.getStatus(SNAPSHOT_ID));
+    }
+    
+    @Test
+    public void testGetSnapshots() throws SnapshotException{
+        String snapshotId = "snapshot";
+        List<JobInstance> jobs = new ArrayList<>();
+        JobInstance job = new JobInstance(1l, SnapshotConstants.SNAPSHOT_JOB_NAME);
+        jobs.add(job);
+
+        List<JobExecution> executions = new ArrayList<>();
+        Map<String,JobParameter> parameters = new HashMap<>();
+        parameters.put(SnapshotConstants.SNAPSHOT_ID,new JobParameter(snapshotId));
+        executions.add(new JobExecution(job, new JobParameters(parameters)));
+
+        EasyMock.expect(this.jobExplorer.getJobInstances(SnapshotConstants.SNAPSHOT_JOB_NAME, 0, 1000)).andReturn(jobs);
+        EasyMock.expect(this.jobExplorer.getJobExecutions(job)).andReturn(executions);
+        
+        replayAll();
+        
+        List<SnapshotSummary> snapshots = this.manager.getSnapshotList();
+        Assert.assertNotNull(snapshots);
+        Assert.assertEquals(jobs.size(), snapshots.size());
+        Assert.assertEquals(snapshotId, snapshots.get(0).getSnapshotId());
+        
     }
 }

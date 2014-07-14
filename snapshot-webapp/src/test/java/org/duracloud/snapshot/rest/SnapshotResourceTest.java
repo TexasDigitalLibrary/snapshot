@@ -9,12 +9,15 @@ package org.duracloud.snapshot.rest;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.concurrent.Future;
+
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
-import org.duracloud.snapshot.spring.batch.SnapshotException;
-import org.duracloud.snapshot.spring.batch.SnapshotJobManager;
-import org.duracloud.snapshot.spring.batch.SnapshotNotFoundException;
-import org.duracloud.snapshot.spring.batch.SnapshotStatus;
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.SnapshotException;
+import org.duracloud.snapshot.manager.SnapshotJobManager;
+import org.duracloud.snapshot.manager.SnapshotNotFoundException;
+import org.duracloud.snapshot.manager.SnapshotStatus;
+import org.duracloud.snapshot.manager.SnapshotStatus.SnapshotStatusType;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
@@ -30,6 +33,10 @@ public class SnapshotResourceTest extends SnapshotTestBase {
     
     @Mock
     private SnapshotJobManager manager;
+    
+    @Mock 
+    private Future<SnapshotStatus> future;
+    
     @TestSubject
     private SnapshotResource resource;
     
@@ -45,7 +52,7 @@ public class SnapshotResourceTest extends SnapshotTestBase {
     @Test
     public void testGetStatusSuccess() throws SnapshotException {
         EasyMock.expect(manager.getStatus(EasyMock.isA(String.class)))
-                .andReturn(new SnapshotStatus("snapshotId", "testStatus"));
+                .andReturn(new SnapshotStatus("snapshotId", SnapshotStatusType.UNKNOWN));
         replayAll();
         resource.getStatus("snapshotId");
     }
@@ -69,7 +76,7 @@ public class SnapshotResourceTest extends SnapshotTestBase {
         Capture<SnapshotConfig> snapshotConfigCapture = new Capture<>();
         EasyMock.expect(manager.executeSnapshotAsync(
                      EasyMock.capture(snapshotConfigCapture)))
-                .andReturn(new SnapshotStatus("test","test"));
+                .andReturn(future);
 
         
         replayAll();

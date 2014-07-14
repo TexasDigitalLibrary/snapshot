@@ -5,21 +5,18 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch;
+package org.duracloud.snapshot.manager.spring.batch;
 
-import org.duracloud.appconfig.domain.NotificationConfig;
 import org.duracloud.common.notification.NotificationManager;
 import org.duracloud.common.notification.NotificationType;
-import org.duracloud.snapshot.spring.batch.config.SnapshotNotifyConfig;
+import org.duracloud.snapshot.manager.SnapshotConstants;
+import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Erik Paulsson
@@ -39,17 +36,6 @@ public class SnapshotExecutionListener implements JobExecutionListener {
 
     public void initialize(SnapshotNotifyConfig snapshotNotifyConfig) {
         this.snapshotNotifyConfig = snapshotNotifyConfig;
-
-        NotificationConfig notifyConfig = new NotificationConfig();
-        notifyConfig.setType(NotificationType.EMAIL.name());
-        notifyConfig.setUsername(snapshotNotifyConfig.getSesUsername());
-        notifyConfig.setPassword(snapshotNotifyConfig.getSesPassword());
-        notifyConfig.setOriginator(
-            snapshotNotifyConfig.getOriginatorEmailAddress());
-
-        List<NotificationConfig> notifyConfigs = new ArrayList<>();
-        notifyConfigs.add(notifyConfig);
-        notificationManager.initializeNotifiers(notifyConfigs);
     }
 
     public void beforeJob(JobExecution jobExecution) {

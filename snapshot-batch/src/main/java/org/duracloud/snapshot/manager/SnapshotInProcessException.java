@@ -5,12 +5,14 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch;
+package org.duracloud.snapshot.manager;
 
 /**
  * @author Daniel Bernstein
  *         Date: Jul 14, 2014
  */
-public class SnapshotSummary {
-
+public class SnapshotInProcessException extends SnapshotException {
+    public SnapshotInProcessException(String message){
+        super(message, null);
+    }
 }

@@ -23,12 +23,12 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.duracloud.snapshot.spring.batch.SnapshotException;
-import org.duracloud.snapshot.spring.batch.SnapshotJobManager;
-import org.duracloud.snapshot.spring.batch.SnapshotNotFoundException;
-import org.duracloud.snapshot.spring.batch.SnapshotStatus;
-import org.duracloud.snapshot.spring.batch.SnapshotSummary;
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.SnapshotException;
+import org.duracloud.snapshot.manager.SnapshotJobManager;
+import org.duracloud.snapshot.manager.SnapshotNotFoundException;
+import org.duracloud.snapshot.manager.SnapshotStatus;
+import org.duracloud.snapshot.manager.SnapshotSummary;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,14 +71,21 @@ public class SnapshotResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response list() {
-        return Response.ok().entity(getSnapshotList()).build();
+        try {
+            return Response.ok().entity(getSnapshotList()).build();
+        } catch (SnapshotException ex) {
+            log.error(ex.getMessage(), ex);
+            return Response.serverError()
+                           .entity(new ResponseDetails(ex.getMessage()))
+                           .build();
+        }
     }
-
     
     /**
      * @return
+     * @throws SnapshotException 
      */
-    private List<SnapshotSummary> getSnapshotList() {
+    private List<SnapshotSummary> getSnapshotList() throws SnapshotException {
         return this.jobManager.getSnapshotList();
     }
 
@@ -122,9 +129,9 @@ public class SnapshotResource {
             config.setStoreId(params.getStoreId());
             config.setSpace(params.getSpaceId());
             config.setSnapshotId(snapshotId);
-            SnapshotStatus status = this.jobManager.executeSnapshotAsync(config);
+            this.jobManager.executeSnapshotAsync(config);
             return Response.created(null)
-                .entity(status)
+                .entity(new ResponseDetails("success"))
                 .build();
         }catch(Exception ex){
             log.error(ex.getMessage(),ex);

@@ -5,25 +5,37 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.spring.batch;
+package org.duracloud.snapshot.manager.spring.batch;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
-import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
-import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.manager.SnapshotConstants;
+import org.duracloud.snapshot.manager.SnapshotException;
+import org.duracloud.snapshot.manager.SnapshotJobManager;
+import org.duracloud.snapshot.manager.SnapshotNotFoundException;
+import org.duracloud.snapshot.manager.SnapshotStatus;
+import org.duracloud.snapshot.manager.SnapshotStatus.SnapshotStatusType;
+import org.duracloud.snapshot.manager.SnapshotSummary;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
+import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.BeansException;
@@ -48,6 +60,8 @@ public class SnapshotJobManagerImpl
     private JobExecutionListener jobListener;
     private JobLauncher jobLauncher;
     private JobRepository jobRepository;
+    private JobExplorer jobExplorer;
+
     private PlatformTransactionManager transactionManager;
     private TaskExecutor taskExecutor;
     private ApplicationContext context;
@@ -59,7 +73,6 @@ public class SnapshotJobManagerImpl
     public SnapshotJobManagerImpl(
         JobExecutionListener jobListener,
         PlatformTransactionManager transactionManager, TaskExecutor taskExecutor) {
-
         super();
         this.jobListener = jobListener;
         this.transactionManager = transactionManager;
@@ -98,7 +111,7 @@ public class SnapshotJobManagerImpl
         this.config = config;
         
         this.jobRepository = (JobRepository) context.getBean(JOB_REPOSITORY_KEY);
-
+        this.jobExplorer = (JobExplorer) context.getBean(JOB_EXPLORER_KEY);
         this.jobLauncher = (JobLauncher) context.getBean(JOB_LAUNCHER_KEY);
     }
 
@@ -111,48 +124,26 @@ public class SnapshotJobManagerImpl
 
     /*
      * (non-Javadoc)
-     * 
-     * @see org.duracloud.snapshot.rest.SnapshotJobManager#getSnapshotList()
-     */
-    /*
-     * @Override public List<SnapshotSummary> getSnapshotList() {
-     * List<SnapshotSummary> list = new LinkedList<>();
-     * 
-     * for (int i = 0; i < 10; i++) { SnapshotSummary summary = new
-     * SnapshotSummary(); list.add(summary); } return list;
-     * 
-     * }
-     */
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.duracloud.snapshot.rest.SnapshotJobManager#executeSnapshotAsync(org
-     * .duracloud.snapshot.spring.batch.driver.SnapshotConfig)
+     * @see org.duracloud.snapshot.manager.SnapshotJobManager#executeSnapshotAsync(org.duracloud.snapshot.manager.config.SnapshotConfig)
      */
     @Override
-    public SnapshotStatus executeSnapshotAsync(final SnapshotConfig config)
+    public Future<SnapshotStatus> executeSnapshotAsync(final SnapshotConfig config)
         throws SnapshotException {
         checkInitialized();
+
         
         final Job job = buildJob(config);
 
-        this.executor.execute(new Runnable(){
-            /* (non-Javadoc)
-             * @see java.lang.Runnable#run()
-             */
-            @Override
-            public void run() {
-                try {
-                    executeJob(job,config);
-                } catch (SnapshotException e) {
-                    log.error(e.getMessage(),e);
-                }
+        FutureTask<SnapshotStatus> future = new FutureTask(new Callable() {
+            public SnapshotStatus call() throws SnapshotException {
+                    return executeJob(job, config);
             }
         });
+        
 
-        return new SnapshotStatus(config.getSnapshotId(), "queued");
+        this.executor.execute(future);
+        
+        return future;
     }
 
     /**
@@ -239,8 +230,7 @@ public class SnapshotJobManagerImpl
 
         checkInitialized();
 
-        String contentDir = config.getContentRootDir() +
-                            File.separator + snapshotId;
+        String contentDir = getSnapshotContentDir(snapshotId);
         JobParameters params = createJobParameters(snapshotId, contentDir);
         JobExecution ex =
             this.jobRepository.getLastJobExecution(SnapshotConstants.SNAPSHOT_JOB_NAME, params);
@@ -252,13 +242,39 @@ public class SnapshotJobManagerImpl
             + snapshotId + "] not found.");
 
     }
+
+    /**
+     * @param snapshotId
+     * @return
+     */
+    private String getSnapshotContentDir(String snapshotId) {
+        String contentDir =
+            config.getContentRootDir()
+                + File.separator + "snapshots" + File.separator + snapshotId;
+        return contentDir;
+    }
     
     /* (non-Javadoc)
      * @see org.duracloud.snapshot.spring.batch.SnapshotJobManager#getSnapshotList()
      */
     @Override
-    public List<SnapshotSummary> getSnapshotList() {
-         return new LinkedList<>();
+    public List<SnapshotSummary> getSnapshotList() throws SnapshotException {
+        checkInitialized();
+        //FIXME - make sure you're pulling all the job instances, not just the first 1000.
+        List<JobInstance> results = this.jobExplorer.getJobInstances(SnapshotConstants.SNAPSHOT_JOB_NAME, 0, 1000);
+        List<SnapshotSummary> list = new ArrayList<>(results.size());
+        for(JobInstance job : results){
+            List<JobExecution> executions = this.jobExplorer.getJobExecutions(job);
+            if(executions.size() > 0) {
+                JobExecution execution =  executions.get(0);
+                JobParameters params = execution.getJobParameters();
+                String snapshotId = params.getString(SnapshotConstants.SNAPSHOT_ID);
+                list.add(new SnapshotSummary(snapshotId));
+                continue;
+            }
+        }
+        
+        return list;
     }
 
 
@@ -282,7 +298,7 @@ public class SnapshotJobManagerImpl
      */
     private SnapshotStatus createSnapshotStatus(String snapshotId,
                                                 JobExecution ex) {
-        return new SnapshotStatus(snapshotId, ex.getStatus().name());
+        return new SnapshotStatus(snapshotId, SnapshotStatusType.valueOf(ex.getStatus().name()));
     }
     
 }
