@@ -7,6 +7,8 @@
  */
 package org.duracloud.snapshot.spring.batch;
 
+import java.util.List;
+
 import org.duracloud.snapshot.spring.batch.config.SnapshotConfig;
 import org.duracloud.snapshot.spring.batch.config.SnapshotJobManagerConfig;
 
@@ -64,6 +66,6 @@ public interface SnapshotJobManager  {
     /**
      * @return
      */
-  /*  List<SnapshotSummary> getSnapshotList();*/
+    List<SnapshotSummary> getSnapshotList();
 
 }

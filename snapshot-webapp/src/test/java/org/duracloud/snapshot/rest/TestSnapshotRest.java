@@ -12,7 +12,8 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.MessageFormat;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.ws.rs.client.Entity;
@@ -24,6 +25,7 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.duracloud.snapshot.spring.batch.SnapshotStatus;
+import org.duracloud.snapshot.spring.batch.SnapshotSummary;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -84,23 +86,22 @@ public class TestSnapshotRest extends JerseyTest {
     @Test
     public void testVersion() {
         Builder b =  target.path("version").request(MediaType.APPLICATION_JSON);
-        String response = b.get(String.class);
+        Map response = b.get(Map.class);
+        
         assertNotNull(response);
+        assertNotNull(response.get("version"));
         
     }
 
 
-    /*
     @Test
     public void testList() {
-        List responseMsg =
-            (List) target.path("list")
+        List<SnapshotSummary> responseMsg =
+            (List<SnapshotSummary>) target.path("list")
                          .request(MediaType.APPLICATION_JSON)
                          .get(List.class);
         assertNotNull(responseMsg);
-        assertTrue(responseMsg.size() > 0);
     }
-    */
 
     @Test
     public void test() throws Exception {
@@ -113,17 +114,15 @@ public class TestSnapshotRest extends JerseyTest {
         String storeId = props.getProperty("storeId");
         String spaceId = props.getProperty("spaceId");
         String snapshotId = System.currentTimeMillis()+"";
-        String path =
-            MessageFormat.format("{0}/{1}/{2}/{3}/{4}",
-                                 host,
-                                 port,
-                                 storeId,
-                                 spaceId,
-                                 snapshotId);
+        
+        CreateSnapshotParams params = new CreateSnapshotParams(host, port, storeId, spaceId);
+        Entity<CreateSnapshotParams> entity = Entity.entity(params, MediaType.APPLICATION_JSON);
+        
+        
         SnapshotStatus responseMsg =
-            target.path(path)
+            target.path("snapshots/"+snapshotId)
                   .request(MediaType.APPLICATION_JSON)
-                  .post(null, SnapshotStatus.class);
+                  .put(entity, SnapshotStatus.class);
         assertNotNull(responseMsg);
         assertEquals(snapshotId, responseMsg.getId());
         assertNotNull(responseMsg.getStatus());

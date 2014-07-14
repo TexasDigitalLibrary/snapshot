@@ -9,6 +9,8 @@ package org.duracloud.snapshot.spring.batch;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -250,6 +252,15 @@ public class SnapshotJobManagerImpl
             + snapshotId + "] not found.");
 
     }
+    
+    /* (non-Javadoc)
+     * @see org.duracloud.snapshot.spring.batch.SnapshotJobManager#getSnapshotList()
+     */
+    @Override
+    public List<SnapshotSummary> getSnapshotList() {
+         return new LinkedList<>();
+    }
+
 
     /**
      * @param snapshotId
@@ -273,4 +284,5 @@ public class SnapshotJobManagerImpl
                                                 JobExecution ex) {
         return new SnapshotStatus(snapshotId, ex.getStatus().name());
     }
+    
 }
