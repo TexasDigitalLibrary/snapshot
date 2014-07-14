@@ -41,6 +41,7 @@ import org.springframework.stereotype.Component;
  * @author Daniel Bernstein Date: Feb 4, 2014
  */
 @Component
+@Path("/snapshots")
 public class SnapshotResource {
     
     private static Logger log = LoggerFactory.getLogger(SnapshotResource.class);
@@ -66,7 +67,7 @@ public class SnapshotResource {
      * 
      * @return
      */
-    @Path("/snapshots")
+    @Path("/")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response list() {
@@ -81,7 +82,7 @@ public class SnapshotResource {
         return this.jobManager.getSnapshotList();
     }
 
-    @Path("/snapshots/{snapshotId}")
+    @Path("{snapshotId}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     /**
@@ -107,7 +108,7 @@ public class SnapshotResource {
         }
     }
 
-    @Path("/snapshots/{snapshotId}")
+    @Path("{snapshotId}")
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

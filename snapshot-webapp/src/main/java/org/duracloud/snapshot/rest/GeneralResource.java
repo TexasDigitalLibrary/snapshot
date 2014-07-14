@@ -43,6 +43,7 @@ import org.springframework.stereotype.Component;
  * @author Daniel Bernstein Date: Feb 4, 2014
  */
 @Component
+@Path("/")
 public class GeneralResource {
     
     private static Logger log = LoggerFactory.getLogger(GeneralResource.class);
@@ -69,7 +70,7 @@ public class GeneralResource {
         this.executionListener = executionListener;
     }    
     
-    @Path("/init")
+    @Path("init")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -170,7 +171,7 @@ public class GeneralResource {
      * 
      * @return
      */
-    @Path("/version")
+    @Path("version")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response version() {
