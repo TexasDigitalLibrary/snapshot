@@ -27,6 +27,7 @@ public class Application extends ResourceConfig{
                 RequestContextFilter.class,
                 GeneralResource.class,
                 SnapshotResource.class,
+                RestorationResource.class,
                 SnapshotObjectMapperProvider.class,
                 JacksonFeature.class);
             

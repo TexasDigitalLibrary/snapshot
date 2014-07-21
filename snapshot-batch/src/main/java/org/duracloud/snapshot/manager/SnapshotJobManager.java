@@ -41,7 +41,7 @@ public interface SnapshotJobManager  {
      * @param config
      * @return
      */
-    Future<SnapshotStatus>  executeSnapshotAsync(SnapshotConfig config)
+    Future<JobStatus>  executeSnapshotAsync(SnapshotConfig config)
         throws SnapshotException;
 
     /**
@@ -50,7 +50,7 @@ public interface SnapshotJobManager  {
      * @return
      * @throws SnapshotException
      */
-    SnapshotStatus executeSnapshot(SnapshotConfig config) throws SnapshotException;
+    JobStatus executeSnapshot(SnapshotConfig config) throws SnapshotException;
 
     /**
      * 
@@ -59,7 +59,7 @@ public interface SnapshotJobManager  {
      * @throws SnapshotNotFoundException
      * @throws SnapshotException
      */
-    SnapshotStatus getStatus(String snapshotId)
+    JobStatus getStatus(String snapshotId)
         throws SnapshotNotFoundException,
             SnapshotException;
 
@@ -69,4 +69,11 @@ public interface SnapshotJobManager  {
      */
     List<SnapshotSummary> getSnapshotList() throws SnapshotException;
 
+
+    /**
+     * @param snapshotConfig
+     */
+    public Future<JobStatus> executeRestoration(final SnapshotConfig config)
+        throws SnapshotException;
+    
 }

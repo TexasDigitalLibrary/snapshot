@@ -15,6 +15,7 @@ public class SnapshotConstants {
     public static final String CONTENT_DIR = "content-dir";
     public static final String SNAPSHOT_ID = "snapshot-id";
     public static final String SNAPSHOT_JOB_NAME = "snapshot";
+    public static final String RESTORE_JOB_NAME = "restore";
 
 
 }

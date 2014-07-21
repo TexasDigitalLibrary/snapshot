@@ -8,6 +8,8 @@
 package org.duracloud.snapshot.rest;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -19,8 +21,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.duracloud.snapshot.restoration.RestoreStatus;
-import org.duracloud.snapshot.restoration.SnapshotRestorationManager;
+import org.duracloud.snapshot.restoration.RestorationRequest;
+import org.duracloud.snapshot.restoration.RestorationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,20 +49,22 @@ public class RestorationResource {
     @Context
     UriInfo uriInfo;
    
-    private SnapshotRestorationManager restorationManager;
+    private RestorationManager restorationManager;
 
     @Autowired
-    public RestorationResource(SnapshotRestorationManager restorationManager) {
+    public RestorationResource(RestorationManager restorationManager) {
         this.restorationManager = restorationManager;
     }
 
-    @Path("{snapshotId}/restore")
+    @Path("/")
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
-    public Response restoreSnapshot(@PathParam("snapshotId") String snapshotId) {
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response restoreSnapshot(@Valid RestoreParams restoreParameters) {
         try {
-            RestoreStatus status =  this.restorationManager.restoreSnapshot(snapshotId);
-            return Response.ok().entity(status).build();
+            RestorationRequest restorationRequest =
+                this.restorationManager.restoreSnapshot(restoreParameters.toRestoreRequestConfig());
+            return Response.ok().entity(restorationRequest).build();
         }catch(Exception ex){
             log.error(ex.getMessage(),ex);
             return Response.serverError()
@@ -70,14 +74,14 @@ public class RestorationResource {
     }
     
 
-    @Path("{snapshotId}/restore-complete")
+    @Path("{restorationId}/restore-complete")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    public Response restoreComplete(@PathParam("snapshotId") String snapshotId) {
+    public Response restoreComplete(@PathParam("restorationId") String restorationId) {
 
         try {
-            RestoreStatus status =
-                this.restorationManager.snapshotRestorationCompleted(snapshotId);
+            RestorationRequest status =
+                this.restorationManager.restorationCompleted(restorationId);
             return Response.ok().entity(status).build();
         }catch(Exception ex){
             log.error(ex.getMessage(),ex);

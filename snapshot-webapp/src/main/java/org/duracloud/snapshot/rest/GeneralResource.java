@@ -37,7 +37,7 @@ import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
 import org.duracloud.snapshot.manager.spring.batch.DatabaseInitializer;
 import org.duracloud.snapshot.manager.spring.batch.SnapshotExecutionListener;
 import org.duracloud.snapshot.restoration.RestorationConfig;
-import org.duracloud.snapshot.restoration.SnapshotRestorationManager;
+import org.duracloud.snapshot.restoration.RestorationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,20 +66,21 @@ public class GeneralResource {
    
     private SnapshotJobManager jobManager;
     private DatabaseInitializer databaseInitializer;
-    private SnapshotExecutionListener executionListener;
-    private SnapshotRestorationManager restorationManager;
+    private SnapshotExecutionListener snapshotExecutionListener;
+    private RestorationManager restorationManager;
     private NotificationManager notificationManager;
     
     @Autowired
     public GeneralResource(SnapshotJobManager jobManager, 
-                            SnapshotRestorationManager restorationManager,
+                            RestorationManager restorationManager,
                             DatabaseInitializer databaseInitializer,
-                            SnapshotExecutionListener executionListener,
+                            SnapshotExecutionListener snapshotExecutionListener,
                             NotificationManager notificationManager) {
         this.jobManager = jobManager;
         this.restorationManager = restorationManager;
         this.databaseInitializer = databaseInitializer;
-        this.executionListener = executionListener;
+        this.snapshotExecutionListener = snapshotExecutionListener;
+
         this.notificationManager = notificationManager;
     }    
     
@@ -130,6 +131,9 @@ public class GeneralResource {
             + File.separator + "restorations");
         config.setDpnEmailAddresses(initParams.getDpnEmailAddresses());
         config.setDuracloudEmailAddresses(initParams.getDuracloudEmailAddresses());
+        config.setDuracloudUsername(initParams.getDuracloudUsername());
+        config.setDuracloudPassword(initParams.getDuracloudPassword());
+        
         this.restorationManager.init(config);
     }
 
@@ -159,7 +163,8 @@ public class GeneralResource {
             initParams.getDpnEmailAddresses());
         notifyConfig.setOriginatorEmailAddress(
             initParams.getOriginatorEmailAddress());
-        this.executionListener.initialize(notifyConfig);
+        this.snapshotExecutionListener.init(notifyConfig);
+
     }
 
     /**

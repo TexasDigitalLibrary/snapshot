@@ -11,7 +11,7 @@ package org.duracloud.snapshot.rest;
  * @author Daniel Bernstein
  *         Date: Jul 14, 2014
  */
-public class CreateSnapshotParams {
+public class SnapshotRequestParams {
     private String host;
     private String port;
     private String storeId;
@@ -23,7 +23,7 @@ public class CreateSnapshotParams {
      * @param storeId
      * @param spaceId
      */
-    public CreateSnapshotParams(
+    public SnapshotRequestParams(
         String host, String port, String storeId, String spaceId) {
         this.host = host;
         this.port = port;
@@ -34,7 +34,7 @@ public class CreateSnapshotParams {
     /**
      * 
      */
-    public CreateSnapshotParams() {}
+    public SnapshotRequestParams() {}
 
     /**
      * @return the host

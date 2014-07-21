@@ -26,7 +26,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.duracloud.snapshot.manager.SnapshotException;
 import org.duracloud.snapshot.manager.SnapshotJobManager;
 import org.duracloud.snapshot.manager.SnapshotNotFoundException;
-import org.duracloud.snapshot.manager.SnapshotStatus;
+import org.duracloud.snapshot.manager.JobStatus;
 import org.duracloud.snapshot.manager.SnapshotSummary;
 import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.slf4j.Logger;
@@ -100,7 +100,7 @@ public class SnapshotResource {
      */
     public Response getStatus(@PathParam("snapshotId") String snapshotId) {
         try {
-            SnapshotStatus status = this.jobManager.getStatus(snapshotId);
+            JobStatus status = this.jobManager.getStatus(snapshotId);
             return Response.ok().entity(status).build();
         } catch (SnapshotNotFoundException ex) {
             log.error(ex.getMessage(), ex);
@@ -119,7 +119,7 @@ public class SnapshotResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response create(@PathParam("snapshotId") String snapshotId, CreateSnapshotParams params) {
+    public Response create(@PathParam("snapshotId") String snapshotId, SnapshotRequestParams params) {
 
         try {
 
@@ -127,7 +127,7 @@ public class SnapshotResource {
             config.setHost(params.getHost());
             config.setPort(Integer.parseInt(params.getPort()));
             config.setStoreId(params.getStoreId());
-            config.setSpace(params.getSpaceId());
+            config.setSpaceId(params.getSpaceId());
             config.setSnapshotId(snapshotId);
             this.jobManager.executeSnapshotAsync(config);
             return Response.created(null)

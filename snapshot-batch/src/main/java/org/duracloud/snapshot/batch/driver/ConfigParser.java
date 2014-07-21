@@ -185,7 +185,7 @@ public class ConfigParser {
             config.setPort(DEFAULT_PORT);
         }
 
-        config.setSpace(cmd.getOptionValue("s"));
+        config.setSpaceId(cmd.getOptionValue("s"));
         config.setStoreId(cmd.getOptionValue("i"));
         config.setSnapshotId(cmd.getOptionValue("n"));
         config.setContentDir(new File(cmd.getOptionValue("c")));

@@ -54,7 +54,7 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
     private SnapshotJobManagerImpl manager;
 
     @Mock
-    private JobExecutionListener jobListener;
+    private JobExecutionListener snapshotJobListener;
 
     @Mock
     private PlatformTransactionManager transactionManager;
@@ -92,7 +92,7 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
     @Before
     public void setup() {
         manager =
-            new SnapshotJobManagerImpl(jobListener,
+            new SnapshotJobManagerImpl(snapshotJobListener,
                                        transactionManager,
                                        taskExecutor);
         manager.setApplicationContext(context);
@@ -129,7 +129,7 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
 
         EasyMock.expect(jobBuilder.build(snapshotConfig,
                                          config,
-                                         jobListener,
+                                         snapshotJobListener,
                                          jobRepository,
                                          jobLauncher,
                                          transactionManager,
@@ -162,7 +162,6 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
     
     @Test
     public void testGetSnapshotStatus() throws SnapshotNotFoundException, SnapshotException{
-        setupContentRootDir();
         EasyMock.expect(jobExecution.getStatus()).andReturn(BatchStatus.COMPLETED);
         EasyMock.expect(jobRepository.getLastJobExecution(EasyMock.isA(String.class),
                                                           EasyMock.isA(JobParameters.class)))

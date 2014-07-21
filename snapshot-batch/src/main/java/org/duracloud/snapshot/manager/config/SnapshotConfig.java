@@ -21,7 +21,7 @@ public class SnapshotConfig {
     private String context = DEFAULT_CONTEXT;
     private String storeId;
     private String snapshotId;
-    private String space;
+    private String spaceId;
     private File contentDir;
 
     public String getHost() {
@@ -64,12 +64,12 @@ public class SnapshotConfig {
         this.snapshotId = snapshotId;
     }
 
-    public String getSpace() {
-        return space;
+    public String getSpaceId() {
+        return spaceId;
     }
 
-    public void setSpace(String space) {
-        this.space = space;
+    public void setSpaceId(String spaceId) {
+        this.spaceId = spaceId;
     }
 
     public File getContentDir() {

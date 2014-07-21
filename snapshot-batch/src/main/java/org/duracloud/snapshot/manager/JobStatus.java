@@ -11,7 +11,7 @@ package org.duracloud.snapshot.manager;
  * @author Daniel Bernstein
  *         Date: Feb 5, 2014
  */
-public class SnapshotStatus {
+public class JobStatus {
     private String id;
     public static enum SnapshotStatusType {
         ABANDONNED,
@@ -29,7 +29,7 @@ public class SnapshotStatus {
     /**
      * 
      */
-    public SnapshotStatus() {
+    public JobStatus() {
     }
 
     
@@ -37,7 +37,7 @@ public class SnapshotStatus {
      * @param id
      * @param status
      */
-    public SnapshotStatus(String id, SnapshotStatusType status) {
+    public JobStatus(String id, SnapshotStatusType status) {
         super();
         this.id = id;
         this.status = status;

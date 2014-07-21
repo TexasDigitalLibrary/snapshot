@@ -15,8 +15,8 @@ import org.duracloud.snapshot.common.test.SnapshotTestBase;
 import org.duracloud.snapshot.manager.SnapshotException;
 import org.duracloud.snapshot.manager.SnapshotJobManager;
 import org.duracloud.snapshot.manager.SnapshotNotFoundException;
-import org.duracloud.snapshot.manager.SnapshotStatus;
-import org.duracloud.snapshot.manager.SnapshotStatus.SnapshotStatusType;
+import org.duracloud.snapshot.manager.JobStatus;
+import org.duracloud.snapshot.manager.JobStatus.SnapshotStatusType;
 import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
@@ -35,7 +35,7 @@ public class SnapshotResourceTest extends SnapshotTestBase {
     private SnapshotJobManager manager;
     
     @Mock 
-    private Future<SnapshotStatus> future;
+    private Future<JobStatus> future;
     
     @TestSubject
     private SnapshotResource resource;
@@ -52,7 +52,7 @@ public class SnapshotResourceTest extends SnapshotTestBase {
     @Test
     public void testGetStatusSuccess() throws SnapshotException {
         EasyMock.expect(manager.getStatus(EasyMock.isA(String.class)))
-                .andReturn(new SnapshotStatus("snapshotId", SnapshotStatusType.UNKNOWN));
+                .andReturn(new JobStatus("snapshotId", SnapshotStatusType.UNKNOWN));
         replayAll();
         resource.getStatus("snapshotId");
     }
@@ -81,13 +81,13 @@ public class SnapshotResourceTest extends SnapshotTestBase {
         
         replayAll();
         
-        resource.create(snapshotId, new CreateSnapshotParams(host, port, storeId, spaceId));
+        resource.create(snapshotId, new SnapshotRequestParams(host, port, storeId, spaceId));
 
         SnapshotConfig snapshotConfig = snapshotConfigCapture.getValue();
         assertEquals(host, snapshotConfig.getHost());
         assertEquals(Integer.parseInt(port), snapshotConfig.getPort());
         assertEquals(storeId, snapshotConfig.getStoreId());
-        assertEquals(spaceId, snapshotConfig.getSpace());
+        assertEquals(spaceId, snapshotConfig.getSpaceId());
         assertEquals(snapshotId, snapshotConfig.getSnapshotId());
     }
 

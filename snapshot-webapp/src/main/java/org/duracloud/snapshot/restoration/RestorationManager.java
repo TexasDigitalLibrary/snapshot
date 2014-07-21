@@ -15,7 +15,7 @@ import org.duracloud.snapshot.manager.SnapshotNotFoundException;
  * @author Daniel Bernstein
  *         Date: Jul 15, 2014
  */
-public interface SnapshotRestorationManager {
+public interface RestorationManager {
     
     /**
      * 
@@ -24,13 +24,13 @@ public interface SnapshotRestorationManager {
     
     /**
      * Initiates the restoration of a snapshot.
-     * @param snapshotId
+     * @param config
      * @return
      * @throws SnapshotNotFoundException
      * @throws SnapshotInProcessException
      * @throws SnapshotException
      */
-    RestoreStatus restoreSnapshot(String snapshotId)
+    RestorationRequest restoreSnapshot(RestoreRequestConfig config)
         throws SnapshotNotFoundException, 
             SnapshotInProcessException,
             SnapshotException;
@@ -39,14 +39,14 @@ public interface SnapshotRestorationManager {
      * Called by the process responsible for performing the restoration from 
      * DPN to Bridge Storage upon completion of the transfer.
      * 
-     * @param snapshotId
+     * @param restorationId
      * @return
      * @throws SnapshotNotFoundException
      * @throws SnapshotInProcessException
      * @throws NoRestorationInProcessException
      * @throws SnapshotException
      */
-    RestoreStatus snapshotRestorationCompleted(String snapshotId)
+    RestorationRequest restorationCompleted(String restorationId)
         throws SnapshotNotFoundException,
             SnapshotInProcessException,
             NoRestorationInProcessException,

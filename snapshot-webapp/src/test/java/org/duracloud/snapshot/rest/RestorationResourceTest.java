@@ -9,9 +9,10 @@ package org.duracloud.snapshot.rest;
 
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
 import org.duracloud.snapshot.manager.SnapshotException;
-import org.duracloud.snapshot.restoration.RestoreStatus;
-import org.duracloud.snapshot.restoration.RestoreStatus.RestoreStatusType;
-import org.duracloud.snapshot.restoration.SnapshotRestorationManager;
+import org.duracloud.snapshot.restoration.RestorationRequest;
+import org.duracloud.snapshot.restoration.RestoreRequestConfig;
+import org.duracloud.snapshot.restoration.RestorationRequest.RestoreStatus;
+import org.duracloud.snapshot.restoration.RestorationManager;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
 import org.easymock.TestSubject;
@@ -25,7 +26,7 @@ import org.junit.Test;
 public class RestorationResourceTest extends SnapshotTestBase {
     
     @Mock
-    private SnapshotRestorationManager manager;
+    private RestorationManager manager;
     @TestSubject
     private RestorationResource resource;
     
@@ -43,21 +44,27 @@ public class RestorationResourceTest extends SnapshotTestBase {
 
     @Test
     public void testRestoreSnapshot() throws SnapshotException {
-        String snapshotId = "mysnapshot";
-        EasyMock.expect(manager.restoreSnapshot(snapshotId))
-                .andReturn(new RestoreStatus(RestoreStatusType.REQUEST_ISSUED,"request issued."));
+        
+        EasyMock.expect(manager.restoreSnapshot(EasyMock.isA(RestoreRequestConfig.class)))
+                .andReturn(EasyMock.createMock(RestorationRequest.class));
         replayAll();
-        resource.restoreSnapshot(snapshotId);
+        RestoreParams params = new RestoreParams();
+        params.setHost("hoset");
+        params.setPort("443");
+        params.setSnapshotId("snapshot");
+        params.setSpaceId("space");
+        resource.restoreSnapshot(params);
+        
         
     }
 
     @Test
     public void testSnapshotRestorationComplete() throws SnapshotException {
-        String snapshotId = "mysnapshot";
-        EasyMock.expect(manager.snapshotRestorationCompleted(snapshotId))
-                .andReturn(new RestoreStatus(RestoreStatusType.COMPLETED,"request issued."));
+        String restorationId = "restoreId";
+        EasyMock.expect(manager.restorationCompleted(restorationId))
+                .andReturn(EasyMock.createMock(RestorationRequest.class));
         replayAll();
-        resource.restoreComplete(snapshotId);
+        resource.restoreComplete(restorationId);
         
     }
 

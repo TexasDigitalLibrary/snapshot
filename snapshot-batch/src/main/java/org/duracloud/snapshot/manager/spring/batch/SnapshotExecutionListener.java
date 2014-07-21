@@ -34,7 +34,7 @@ public class SnapshotExecutionListener implements JobExecutionListener {
         this.notificationManager = notificationManager;
     }
 
-    public void initialize(SnapshotNotifyConfig snapshotNotifyConfig) {
+    public void init(SnapshotNotifyConfig snapshotNotifyConfig) {
         this.snapshotNotifyConfig = snapshotNotifyConfig;
     }
 
@@ -50,6 +50,58 @@ public class SnapshotExecutionListener implements JobExecutionListener {
         String snapshotPath = jobParams.getString(SnapshotConstants.CONTENT_DIR);
 
         log.debug("Completed snapshot: {} with status: {}", snapshotId, status);
+        String jobName = jobExecution.getJobInstance().getJobName();
+        
+        if(jobName.equals(SnapshotConstants.SNAPSHOT_JOB_NAME)){
+            handleAfterSnapshotJob(status, snapshotId, snapshotPath);
+        }else if(jobName.equals(SnapshotConstants.RESTORE_JOB_NAME)){
+            handleAfterRestorationJob(status, snapshotId, snapshotPath);
+        }
+    }
+
+    /**
+     * @param status
+     * @param snapshotId
+     * @param snapshotPath
+     */
+    private void handleAfterRestorationJob(BatchStatus status,
+                                           String snapshotId,
+                                           String snapshotPath) {
+        log.debug("Completed snapshot: {} with status: {}", snapshotId, status);
+        if(BatchStatus.COMPLETED.equals(status)) {
+            // Job success. Email duracloud team as well as restoration requestor
+            // TODO Figure out where the duracloud user's email is coming from.
+            // TODO make sure that duracloud space location (host,port,space,store) info
+            //  is included in the email.
+            String subject =
+                "DuraCloud snapshot has been restored!";
+            String message =
+                "A DuraCloud content snapshot has been transferred from " +
+                "bridge storage to DuraCloud";
+            sendEmail(subject, message, this.snapshotNotifyConfig.getDuracloudEmailAddresses());
+        } else {
+            // Job failed.  Email DuraSpace team about failed snapshot attempt.
+            String subject =
+                "DuraCloud snapshot restoration failed to complete";
+            String message =
+                "A DuraCloud snapshot restoration has failed to complete.\n" +
+                "\nsnapshot-id=" + snapshotId +
+                "\nsnapshot-path=" + snapshotPath;
+                // TODO: Add details of failure in message
+            sendEmail(subject, message,
+                      snapshotNotifyConfig.getDuracloudEmailAddresses());
+        }
+        
+    }
+
+    /**
+     * @param status
+     * @param snapshotId
+     * @param snapshotPath
+     */
+    private void handleAfterSnapshotJob(BatchStatus status,
+                                        String snapshotId,
+                                        String snapshotPath) {
         if(BatchStatus.COMPLETED.equals(status)) {
             // Job success. Email Chronopolis/DPN AND DuraSpace teams about
             // snapshot ready for transfer into preservation storage.

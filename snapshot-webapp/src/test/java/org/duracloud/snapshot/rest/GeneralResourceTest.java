@@ -26,7 +26,7 @@ import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
 import org.duracloud.snapshot.manager.spring.batch.DatabaseInitializer;
 import org.duracloud.snapshot.manager.spring.batch.SnapshotExecutionListener;
 import org.duracloud.snapshot.restoration.RestorationConfig;
-import org.duracloud.snapshot.restoration.SnapshotRestorationManager;
+import org.duracloud.snapshot.restoration.RestorationManager;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
@@ -68,7 +68,7 @@ public class GeneralResourceTest extends SnapshotTestBase {
     private SnapshotJobManager manager;
 
     @Mock
-    private SnapshotRestorationManager restorationManager;
+    private RestorationManager restorationManager;
 
     @TestSubject
     private GeneralResource resource;
@@ -95,7 +95,7 @@ public class GeneralResourceTest extends SnapshotTestBase {
         EasyMock.expectLastCall();
 
         Capture<SnapshotNotifyConfig> notifyConfigCapture = new Capture<>();
-        executionListener.initialize(EasyMock.capture(notifyConfigCapture));
+        executionListener.init(EasyMock.capture(notifyConfigCapture));
         EasyMock.expectLastCall();
 
         Capture<SnapshotJobManagerConfig> duracloudConfigCapture = new Capture<>();
@@ -201,7 +201,7 @@ public class GeneralResourceTest extends SnapshotTestBase {
         initializer.init(EasyMock.isA(DatabaseConfig.class));
         EasyMock.expectLastCall();
 
-        executionListener.initialize(EasyMock.isA(SnapshotNotifyConfig.class));
+        executionListener.init(EasyMock.isA(SnapshotNotifyConfig.class));
         EasyMock.expectLastCall();
 
         manager.init(EasyMock.isA(SnapshotJobManagerConfig.class));

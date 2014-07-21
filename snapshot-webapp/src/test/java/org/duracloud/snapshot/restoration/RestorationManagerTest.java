@@ -10,17 +10,20 @@ package org.duracloud.snapshot.restoration;
 import static org.easymock.EasyMock.isA;
 
 import java.io.File;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 import org.duracloud.common.notification.NotificationManager;
 import org.duracloud.common.notification.NotificationType;
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
+import org.duracloud.snapshot.manager.JobStatus;
+import org.duracloud.snapshot.manager.JobStatus.SnapshotStatusType;
 import org.duracloud.snapshot.manager.SnapshotException;
 import org.duracloud.snapshot.manager.SnapshotInProcessException;
 import org.duracloud.snapshot.manager.SnapshotJobManager;
 import org.duracloud.snapshot.manager.SnapshotNotFoundException;
-import org.duracloud.snapshot.manager.SnapshotStatus;
-import org.duracloud.snapshot.manager.SnapshotStatus.SnapshotStatusType;
-import org.duracloud.snapshot.restoration.RestoreStatus.RestoreStatusType;
+import org.duracloud.snapshot.manager.config.SnapshotConfig;
+import org.duracloud.snapshot.restoration.RestorationRequest.RestoreStatus;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
 import org.easymock.TestSubject;
@@ -31,7 +34,7 @@ import org.junit.Test;
  * @author Daniel Bernstein
  *         Date: Jul 16, 2014
  */
-public class SnapshotRestorationManagerTest  extends SnapshotTestBase {
+public class RestorationManagerTest  extends SnapshotTestBase {
 
     @Mock
     private SnapshotJobManager jobManager;
@@ -40,7 +43,7 @@ public class SnapshotRestorationManagerTest  extends SnapshotTestBase {
     private NotificationManager notificationManager;
 
     @TestSubject
-    private SnapshotRestorationManagerImpl manager;
+    private RestorationManagerImpl manager;
     
 
     /* (non-Javadoc)
@@ -54,7 +57,7 @@ public class SnapshotRestorationManagerTest  extends SnapshotTestBase {
     /**
 
     /**
-     * Test method for {@link org.duracloud.snapshot.restoration.SnapshotRestorationManagerImpl#restoreSnapshot(java.lang.String)}.
+     * Test method for {@link org.duracloud.snapshot.restoration.RestorationManagerImpl#restoreSnapshot(java.lang.String)}.
      * @throws SnapshotException 
      * @throws SnapshotInProcessException 
      * @throws SnapshotNotFoundException 
@@ -63,10 +66,9 @@ public class SnapshotRestorationManagerTest  extends SnapshotTestBase {
     public void testRestoreSnapshot() throws SnapshotNotFoundException, SnapshotInProcessException, SnapshotException {
         setupRestoreCall();
         replayAll();
-        String snapshotId = "snapshot-" + System.currentTimeMillis();
-        RestoreStatus status = manager.restoreSnapshot(snapshotId);
+        RestorationRequest status = manager.restoreSnapshot(createRestoreRequestConfig());
         Assert.assertNotNull(status);
-        Assert.assertEquals(status.getStatusType(), RestoreStatusType.REQUEST_ISSUED);
+        Assert.assertEquals(status.getStatus(), RestoreStatus.REQUEST_ISSUED);
     }
     /**
      * @throws SnapshotNotFoundException
@@ -84,41 +86,42 @@ public class SnapshotRestorationManagerTest  extends SnapshotTestBase {
     }
 
     /**
-     * Test method for {@link org.duracloud.snapshot.restoration.SnapshotRestorationManagerImpl#getRestoreStatus(java.lang.String)}.
+     * Test method for {@link org.duracloud.snapshot.restoration.RestorationManagerImpl#getRestoreRequest(java.lang.String)}.
      * @throws SnapshotException 
      * @throws SnapshotNotFoundException 
      */
     @Test
-    public void testGetRestoreStatus() throws SnapshotNotFoundException, SnapshotException {
+    public void testGetRestoreStatus() throws SnapshotException {
 
         replayAll();
 
-        RestoreStatus status = this.manager.getRestoreStatus("test");
-        Assert.assertNotNull(status);
-        Assert.assertEquals(RestoreStatusType.NO_RESTORATION_FOUND, status.getStatusType());
+        try { 
+            this.manager.getRestoreRequest("test");
+            Assert.fail();
+        }catch(NoRestorationInProcessException ex){
+            Assert.assertTrue(true);
+        }
     }
     /**
      * @throws SnapshotNotFoundException
      * @throws SnapshotException
      */
     private void expectCompletedSnapshotJobStatus()
-        throws SnapshotNotFoundException,
-            SnapshotException {
+        throws SnapshotException {
         expectCompletedSnapshotJobStatus(1);
     }
 
     private void expectCompletedSnapshotJobStatus(int times)
-        throws SnapshotNotFoundException,
-            SnapshotException {
+        throws SnapshotException {
         EasyMock.expect(this.jobManager.getStatus(EasyMock.isA(String.class)))
-                .andReturn(new SnapshotStatus("test", SnapshotStatusType.COMPLETED)).times(times);
+                .andReturn(new JobStatus("test", SnapshotStatusType.COMPLETED)).times(times);
     }
 
     /**
      * 
      */
     private void setupManager() {
-        manager = new SnapshotRestorationManagerImpl(jobManager, notificationManager);
+        manager = new RestorationManagerImpl(jobManager, notificationManager);
         RestorationConfig config = new RestorationConfig();
         config.setDpnEmailAddresses(new String[] {"a"});
         config.setDuracloudEmailAddresses(new String[]{"b"});
@@ -128,23 +131,32 @@ public class SnapshotRestorationManagerTest  extends SnapshotTestBase {
     }
 
     /**
-     * Test method for {@link org.duracloud.snapshot.restoration.SnapshotRestorationManagerImpl#snapshotRestorationCompleted(java.lang.String)}.
+     * Test method for {@link org.duracloud.snapshot.restoration.RestorationManagerImpl#restorationCompleted(java.lang.String)}.
      */
     @Test
     public void testSnapshotRestorationCompleted() throws SnapshotException{
         setupRestoreCall();
-        //expectCompletedSnapshotJobStatus(2);
-
+        Future<JobStatus> future = null;
+        EasyMock.expect(this.jobManager.executeRestoration(EasyMock.isA(SnapshotConfig.class)))
+                .andReturn(future);
+        
         replayAll();
-
-        String snapshotId = "snapshot-" + System.currentTimeMillis();
-        RestoreStatus status = manager.restoreSnapshot(snapshotId);
+        RestoreRequestConfig config = createRestoreRequestConfig();
+        String restorationId = RestorationUtil.getId(config);
+        RestorationRequest status = manager.restoreSnapshot(config);
         Assert.assertNotNull(status);
-        Assert.assertEquals(status.getStatusType(), RestoreStatusType.REQUEST_ISSUED);
+        Assert.assertEquals(status.getStatus(), RestoreStatus.REQUEST_ISSUED);
 
-        status = manager.snapshotRestorationCompleted(snapshotId);
+        status = manager.restorationCompleted(restorationId);
         Assert.assertNotNull(status);
-        Assert.assertEquals(status.getStatusType(), RestoreStatusType.COMPLETED);
+        Assert.assertEquals(status.getStatus(), RestoreStatus.RESTORE_TO_BRIDGE_COMPLETE);
 
+    }
+    /**
+     * @return
+     */
+    private RestoreRequestConfig createRestoreRequestConfig() {
+        RestoreRequestConfig config = new RestoreRequestConfig("test", 443, "0", "space", "snapshot");
+        return config;
     }
 }

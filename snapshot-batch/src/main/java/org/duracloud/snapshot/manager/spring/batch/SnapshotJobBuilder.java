@@ -76,7 +76,7 @@ public class SnapshotJobBuilder {
                                               snapshotConfig.getStoreId());
 
             List<String> spaces = new ArrayList<>();
-            spaces.add(snapshotConfig.getSpace());
+            spaces.add(snapshotConfig.getSpaceId());
 
             RetrievalSource retrievalSource =
                 new DuraStoreStitchingRetrievalSource(contentStore,

@@ -28,8 +28,8 @@ public class SnapshotUtils {
                              snapshotConfig.getSnapshotId());
             }
         }
-
-        if (contentDir != null) {
+        
+        if(contentDir != null){
             contentDir.mkdirs();
             return contentDir;
         }

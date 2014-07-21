@@ -13,7 +13,8 @@ package org.duracloud.snapshot.restoration;
  */
 public class RestorationConfig {
     private String restorationRootDir;
-
+    private String duracloudUsername;
+    private String duracloudPassword;
     private String[] duracloudEmailAddresses;
     private String[] dpnEmailAddresses;
 
@@ -59,6 +60,34 @@ public class RestorationConfig {
      */
     public void setDpnEmailAddresses(String[] dpnEmailAddresses) {
         this.dpnEmailAddresses = dpnEmailAddresses;
+    }
+
+    /**
+     * @return the duracloudUsername
+     */
+    public String getDuracloudUsername() {
+        return duracloudUsername;
+    }
+
+    /**
+     * @param duracloudUsername the duracloudUsername to set
+     */
+    public void setDuracloudUsername(String duracloudUsername) {
+        this.duracloudUsername = duracloudUsername;
+    }
+
+    /**
+     * @return the duracloudPassword
+     */
+    public String getDuracloudPassword() {
+        return duracloudPassword;
+    }
+
+    /**
+     * @param duracloudPassword the duracloudPassword to set
+     */
+    public void setDuracloudPassword(String duracloudPassword) {
+        this.duracloudPassword = duracloudPassword;
     }
 
     

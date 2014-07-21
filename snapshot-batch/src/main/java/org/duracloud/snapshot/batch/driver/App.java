@@ -8,7 +8,7 @@
 package org.duracloud.snapshot.batch.driver;
 
 import org.duracloud.snapshot.manager.SnapshotJobManager;
-import org.duracloud.snapshot.manager.SnapshotStatus;
+import org.duracloud.snapshot.manager.JobStatus;
 import org.duracloud.snapshot.manager.config.DatabaseConfig;
 import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
@@ -56,7 +56,7 @@ public class App {
         // initialize the snapshot execution listener
         SnapshotExecutionListener executionListener =
             (SnapshotExecutionListener) context.getBean("jobListener");
-        executionListener.initialize(notifyConfig);
+        executionListener.init(notifyConfig);
 
         // initialize the snapshot job manager
         SnapshotJobManager manager =
@@ -65,7 +65,7 @@ public class App {
 
         try {
 
-            SnapshotStatus status = manager.executeSnapshot(config);
+            JobStatus status = manager.executeSnapshot(config);
             LOGGER.info("Exit Status : {}", status);
 
         } catch (Exception e) {
