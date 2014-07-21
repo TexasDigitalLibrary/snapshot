@@ -93,7 +93,7 @@ public class RestorationManagerImpl  implements RestorationManager{
             restoreRequest =
                 new RestorationRequest(RestorationUtil.getId(config),
                                        config,
-                                       RestoreStatus.REQUEST_ISSUED);
+                                       RestoreStatus.WAITING_FOR_DPN);
             restoreRequest.setMessage("request issued at "
                                                   + new Date());
             
@@ -105,7 +105,7 @@ public class RestorationManagerImpl  implements RestorationManager{
         RestoreStatus status = restoreRequest.getStatus();
 
         //verify that restore has not already started.
-        if(status.equals(RestoreStatus.RESTORE_TO_BRIDGE_COMPLETE) || status.equals(RestoreStatus.REQUEST_ISSUED)){
+        if(status.equals(RestoreStatus.DPN_TRANSFER_COMPLETE) || status.equals(RestoreStatus.WAITING_FOR_DPN)){
             return restoreRequest;
         }else{
             throw new SnapshotException("Unrecognized restore state: " + status, null);
@@ -216,13 +216,13 @@ public class RestorationManagerImpl  implements RestorationManager{
         
         RestoreStatus status = request.getStatus();
         
-        if(status.equals(RestoreStatus.RESTORE_TO_BRIDGE_COMPLETE)){
+        if(status.equals(RestoreStatus.DPN_TRANSFER_COMPLETE)){
             log.warn("restoration " + restorationId + " already completed. Ignoring...");
             return request;
-        } else if(status.equals(RestoreStatus.REQUEST_ISSUED)){
+        } else if(status.equals(RestoreStatus.WAITING_FOR_DPN)){
             log.info("caller has indicated that restoration request " + restorationId + " is complete.");
             request.setMessage("completed on " + new Date());
-            request.setStatus(RestoreStatus.RESTORE_TO_BRIDGE_COMPLETE);
+            request.setStatus(RestoreStatus.DPN_TRANSFER_COMPLETE);
             persist(request);
             
             RestoreRequestConfig requestConfig =  request.getConfig();

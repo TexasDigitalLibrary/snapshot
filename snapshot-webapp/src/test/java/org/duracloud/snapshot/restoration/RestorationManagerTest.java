@@ -68,7 +68,7 @@ public class RestorationManagerTest  extends SnapshotTestBase {
         replayAll();
         RestorationRequest status = manager.restoreSnapshot(createRestoreRequestConfig());
         Assert.assertNotNull(status);
-        Assert.assertEquals(status.getStatus(), RestoreStatus.REQUEST_ISSUED);
+        Assert.assertEquals(status.getStatus(), RestoreStatus.WAITING_FOR_DPN);
     }
     /**
      * @throws SnapshotNotFoundException
@@ -145,11 +145,11 @@ public class RestorationManagerTest  extends SnapshotTestBase {
         String restorationId = RestorationUtil.getId(config);
         RestorationRequest status = manager.restoreSnapshot(config);
         Assert.assertNotNull(status);
-        Assert.assertEquals(status.getStatus(), RestoreStatus.REQUEST_ISSUED);
+        Assert.assertEquals(status.getStatus(), RestoreStatus.WAITING_FOR_DPN);
 
         status = manager.restorationCompleted(restorationId);
         Assert.assertNotNull(status);
-        Assert.assertEquals(status.getStatus(), RestoreStatus.RESTORE_TO_BRIDGE_COMPLETE);
+        Assert.assertEquals(status.getStatus(), RestoreStatus.DPN_TRANSFER_COMPLETE);
 
     }
     /**

@@ -25,10 +25,8 @@ import org.springframework.batch.item.UnexpectedInputException;
  */
 public class FileSystemReader implements ItemReader<File>{
     
-    private File rootDirectory;
     private SimpleDirectoryWalker walker;
     public FileSystemReader(File rootDirectory){
-        this.rootDirectory = rootDirectory;
         this.walker = new SimpleDirectoryWalker(rootDirectory);
         this.walker.start();
     }

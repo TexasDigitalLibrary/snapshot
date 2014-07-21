@@ -13,10 +13,12 @@ package org.duracloud.snapshot.restoration;
  */
 public class RestorationRequest {
     public static enum RestoreStatus {
-        REQUEST_ISSUED,
-        RESTORE_TO_BRIDGE_COMPLETE,
-        DURACLOUD_COPY_COMPLETE,
-        DURACLOUD_VERIFICATION_COMPLETE;
+        INITIALIZED,
+        WAITING_FOR_DPN,
+        DPN_TRANSFER_COMPLETE,
+        TRANSFERRING_TO_DURACLOUD,
+        VERIFYING_TRANSFERRED_CONTENT,
+        RESTORATION_COMPLETE;
     }
     
     private RestoreStatus status;
