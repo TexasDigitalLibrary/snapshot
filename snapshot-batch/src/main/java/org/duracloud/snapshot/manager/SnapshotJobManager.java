@@ -7,11 +7,10 @@
  */
 package org.duracloud.snapshot.manager;
 
-import java.util.List;
 import java.util.concurrent.Future;
 
-import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
+import org.springframework.batch.core.BatchStatus;
 
 /**
  * An interface defining the interaction between the REST
@@ -24,7 +23,6 @@ public interface SnapshotJobManager  {
 
     
     public final static String JOB_REPOSITORY_KEY = "jobRepository";
-    public final static String JOB_EXPLORER_KEY = "jobExplorer";
     public final static String JOB_LAUNCHER_KEY = "jobLauncher";
     
     /**
@@ -38,19 +36,19 @@ public interface SnapshotJobManager  {
      * This method of executing a snapshot is guaranteed to be an asynchronous version of executeSnapshot().
      * That is, the method will return after creating the job and queuing it up, rather than waiting until
      * it has been executed.
-     * @param config
+     * @param snapshotId
      * @return
      */
-    Future<JobStatus>  executeSnapshotAsync(SnapshotConfig config)
+    Future<BatchStatus>  executeSnapshotAsync(String snapshotId)
         throws SnapshotException;
 
     /**
      * This method creates an underlying job and executes it. 
-     * @param config
+     * @param snapshotId
      * @return
      * @throws SnapshotException
      */
-    JobStatus executeSnapshot(SnapshotConfig config) throws SnapshotException;
+    BatchStatus executeSnapshot(String snapshotId) throws SnapshotException;
 
     /**
      * 
@@ -59,21 +57,15 @@ public interface SnapshotJobManager  {
      * @throws SnapshotNotFoundException
      * @throws SnapshotException
      */
-    JobStatus getStatus(String snapshotId)
+    BatchStatus getStatus(String snapshotId)
         throws SnapshotNotFoundException,
             SnapshotException;
-
-    /**
-     * @return
-     * @throws SnapshotException 
-     */
-    List<SnapshotSummary> getSnapshotList() throws SnapshotException;
 
 
     /**
      * @param snapshotConfig
      */
-    public Future<JobStatus> executeRestoration(final SnapshotConfig config)
+    public Future<BatchStatus> executeRestoration(Long restorationId)
         throws SnapshotException;
     
 }

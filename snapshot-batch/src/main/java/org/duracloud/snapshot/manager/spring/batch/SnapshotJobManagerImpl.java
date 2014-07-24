@@ -8,9 +8,7 @@
 package org.duracloud.snapshot.manager.spring.batch;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -18,29 +16,27 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
+import org.duracloud.snapshot.db.model.Restoration;
+import org.duracloud.snapshot.db.model.Snapshot;
+import org.duracloud.snapshot.db.repo.RestorationRepo;
+import org.duracloud.snapshot.db.repo.SnapshotRepo;
 import org.duracloud.snapshot.manager.SnapshotConstants;
 import org.duracloud.snapshot.manager.SnapshotException;
 import org.duracloud.snapshot.manager.SnapshotJobManager;
 import org.duracloud.snapshot.manager.SnapshotNotFoundException;
-import org.duracloud.snapshot.manager.JobStatus;
-import org.duracloud.snapshot.manager.JobStatus.SnapshotStatusType;
-import org.duracloud.snapshot.manager.SnapshotSummary;
-import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
-import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.task.TaskExecutor;
@@ -61,20 +57,23 @@ public class SnapshotJobManagerImpl
     private JobExecutionListener jobListener;
     private JobLauncher jobLauncher;
     private JobRepository jobRepository;
-    private JobExplorer jobExplorer;
 
     private PlatformTransactionManager transactionManager;
     private TaskExecutor taskExecutor;
     private ApplicationContext context;
     private ExecutorService executor;
+    private SnapshotRepo snapshotRepo;
+    private RestorationRepo restorationRepo;
     private SnapshotJobManagerConfig config;
     private SnapshotJobBuilder snapshotJobBuilder;
     private RestorationJobBuilder restorationJobBuilder;
     
     @Autowired
-    public SnapshotJobManagerImpl(
-        JobExecutionListener jobListener,
-        PlatformTransactionManager transactionManager, TaskExecutor taskExecutor) {
+    public SnapshotJobManagerImpl(JobExecutionListener jobListener,
+                                    PlatformTransactionManager transactionManager,
+                                    TaskExecutor taskExecutor, 
+                                    SnapshotRepo snapshotRepo,
+                                    RestorationRepo restorationRepo) {
         super();
         this.jobListener = jobListener;
         this.transactionManager = transactionManager;
@@ -82,6 +81,8 @@ public class SnapshotJobManagerImpl
         this.executor = Executors.newFixedThreadPool(10);
         this.snapshotJobBuilder = new SnapshotJobBuilder();
         this.restorationJobBuilder = new RestorationJobBuilder();
+        this.restorationRepo = restorationRepo;
+        this.snapshotRepo = snapshotRepo;
     }
 
     /*
@@ -115,7 +116,6 @@ public class SnapshotJobManagerImpl
         this.config = config;
         
         this.jobRepository = (JobRepository) context.getBean(JOB_REPOSITORY_KEY);
-        this.jobExplorer = (JobExplorer) context.getBean(JOB_EXPLORER_KEY);
         this.jobLauncher = (JobLauncher) context.getBean(JOB_LAUNCHER_KEY);
     }
 
@@ -131,26 +131,25 @@ public class SnapshotJobManagerImpl
      * @see org.duracloud.snapshot.manager.SnapshotJobManager#executeSnapshotAsync(org.duracloud.snapshot.manager.config.SnapshotConfig)
      */
     @Override
-    public Future<JobStatus> executeSnapshotAsync(final SnapshotConfig config)
+    public Future<BatchStatus> executeSnapshotAsync(final String snapshotId)
         throws SnapshotException {
         checkInitialized();
 
+        final Snapshot snapshot = getSnapshot(snapshotId);
         
-        final Job job = buildJob(config, SnapshotConstants.SNAPSHOT_JOB_NAME);
+        final JobRequest jobRequest = buildJob(snapshot);
 
-        return executeJob(config, job);
+        return executeAsync(jobRequest);
     }
 
     /**
-     * @param config
-     * @param job
+     * @param jobRequest
      * @return
      */
-    private Future<JobStatus> executeJob(final SnapshotConfig config,
-                                         final Job job) {
-        FutureTask<JobStatus> future = new FutureTask(new Callable() {
-            public JobStatus call() throws SnapshotException {
-                    return executeJob(job, config);
+    private Future<BatchStatus> executeAsync(final JobRequest jobRequest) {
+        FutureTask<BatchStatus> future = new FutureTask(new Callable() {
+            public BatchStatus call() throws SnapshotException {
+                    return executeJob(jobRequest);
             }
         });
         
@@ -159,89 +158,104 @@ public class SnapshotJobManagerImpl
         
         return future;
     }
+    
 
-    /**
-     * @param snapshotConfig
-     * @return
-     * @throws SnapshotException
-     */
-    private JobStatus executeJob(Job job, SnapshotConfig snapshotConfig)
-        throws SnapshotException {
-
-        String snapshotId = snapshotConfig.getSnapshotId();
+    private Snapshot getSnapshot(String snapshotId) throws SnapshotNotFoundException{
+        Snapshot snapshot = this.snapshotRepo.findByName(snapshotId);
+        if(snapshot == null){
+            throw new SnapshotNotFoundException(snapshotId);
+        }
         
-        File contentDir = SnapshotUtils.resolveContentDir(snapshotConfig,this.config);
-        JobParameters params =
-            createJobParameters(snapshotId, contentDir.getAbsolutePath());
-        try {
+        return snapshot;
+    }
+
+     private BatchStatus executeJob(JobRequest jobRequest)
+        throws SnapshotException {
+         Job job = jobRequest.getJob();
+         JobParameters params = jobRequest.getJobParameters();    
+         try {
             JobExecution execution = jobLauncher.run(job, params);
-            return createSnapshotStatus(snapshotId, execution);
+            return execution.getStatus();
         } catch (Exception e) {
             String message =
-                "Error running job: " + snapshotId + ": " + e.getMessage();
+                "Error running job: " + job.getName() + ", params=" + params + ": " + e.getMessage();
             log.error(message, e);
             throw new SnapshotException(e.getMessage(), e);
         }
     }
     
-    
+
     /* (non-Javadoc)
-     * @see org.duracloud.snapshot.manager.SnapshotJobManager#executeRestoration(org.duracloud.snapshot.manager.config.SnapshotConfig)
+     * @see org.duracloud.snapshot.manager.SnapshotJobManager#executeRestoration(java.lang.Long)
      */
     @Override
-    public Future<JobStatus> executeRestoration(SnapshotConfig config)
+    public Future<BatchStatus> executeRestoration(Long restorationId)
         throws SnapshotException {
-        return executeJob(config, buildJob(config, SnapshotConstants.RESTORE_JOB_NAME));
+        
+        return executeAsync(buildJob(getRestoration(restorationId)));
     }
     
 
     /**
-     * @param snapshotConfig
-     * @param jobName 
+     * @param restorationId
+     * @return
+     */
+    private Snapshot getRestoration(Long restorationId)  throws RestorationNotFoundException {
+        Restoration restoration = this.restorationRepo.getOne(restorationId);
+        if(restoration == null){
+            throw new RestorationNotFoundException(restorationId);
+        }
+        return null;
+    }
+
+    /**
+     * @param snapshot
      * @return
      * @throws SnapshotException
      */
-    public Job buildJob(SnapshotConfig snapshotConfig, String jobName) throws SnapshotException {
-        
-        if(jobName == SnapshotConstants.SNAPSHOT_JOB_NAME){
-            return snapshotJobBuilder.build(snapshotConfig,
+    private JobRequest buildJob(Snapshot snapshot) throws SnapshotException {
+             Job job= snapshotJobBuilder.build(snapshot,
                                     config,
                                     jobListener,
                                     jobRepository,
                                     jobLauncher,
                                     transactionManager,
                                     taskExecutor);
-        } else if(jobName == SnapshotConstants.RESTORE_JOB_NAME){
-            return restorationJobBuilder.build(snapshotConfig,
-                                    config,
-                                    jobListener,
-                                    jobRepository,
-                                    jobLauncher,
-                                    transactionManager,
-                                    taskExecutor);
-        } else{
-            throw new RuntimeException("Jobname " + jobName + " not recognized.");
-        }
-        
+
+             
+             return new JobRequest(job, createJobParameters(snapshot.getId()));
     }
 
- 
+    /**
+     * @param snapshot
+     * @return
+     * @throws SnapshotException
+     */
+    private JobRequest buildJob(Restoration restoration) throws SnapshotException {
+        
+        Job job =  restorationJobBuilder.build(restoration,
+                                    config,
+                                    jobListener,
+                                    jobRepository,
+                                    jobLauncher,
+                                    transactionManager,
+                                    taskExecutor);
+        return new JobRequest(job, createJobParameters(restoration.getId()));
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.duracloud.snapshot.spring.batch.SnapshotJobManager#executeSnapshotSync
-     * (org.duracloud.snapshot.spring.batch.config.SnapshotConfig)
+    }
+ 
+    /* (non-Javadoc)
+     * @see org.duracloud.snapshot.manager.SnapshotJobManager#executeSnapshot(java.lang.String)
      */
     @Override
-    public JobStatus executeSnapshot(SnapshotConfig config)
+    public BatchStatus executeSnapshot(String snapshotId)
         throws SnapshotException {
         checkInitialized();
-        Job job = buildJob(config, SnapshotConstants.SNAPSHOT_JOB_NAME);
-        return executeJob(job,config);
+        
+        JobRequest job = buildJob(getSnapshot(snapshotId));
+        return executeJob(job);
     }
-
+ 
     /**
      * 
      */
@@ -260,22 +274,20 @@ public class SnapshotJobManagerImpl
      * .String)
      */
     @Override
-    public JobStatus getStatus(String snapshotId)
+    public BatchStatus getStatus(String snapshotId)
         throws SnapshotNotFoundException,
             SnapshotException {
 
         checkInitialized();
-
-        JobParameters params = new JobParameters(createIdentifyingJobParameters(snapshotId));
+        Snapshot snapshot = getSnapshot(snapshotId);
+        JobParameters params = new JobParameters(createIdentifyingJobParameters(snapshot.getId()));
         JobExecution ex =
             this.jobRepository.getLastJobExecution(SnapshotConstants.SNAPSHOT_JOB_NAME, params);
-        if (ex != null) {
-            return createSnapshotStatus(snapshotId, ex);
+        if (ex == null) {
+            return BatchStatus.UNKNOWN;
+        }else{
+            return ex.getStatus();
         }
-
-        throw new SnapshotNotFoundException("Snapshot ["
-            + snapshotId + "] not found.");
-
     }
 
     /**
@@ -289,55 +301,22 @@ public class SnapshotJobManagerImpl
         return contentDir;
     }
     
-    /* (non-Javadoc)
-     * @see org.duracloud.snapshot.spring.batch.SnapshotJobManager#getSnapshotList()
-     */
-    @Override
-    public List<SnapshotSummary> getSnapshotList() throws SnapshotException {
-        checkInitialized();
-        //FIXME - make sure you're pulling all the job instances, not just the first 1000.
-        List<JobInstance> results = this.jobExplorer.getJobInstances(SnapshotConstants.SNAPSHOT_JOB_NAME, 0, 1000);
-        List<SnapshotSummary> list = new ArrayList<>(results.size());
-        for(JobInstance job : results){
-            List<JobExecution> executions = this.jobExplorer.getJobExecutions(job);
-            if(executions.size() > 0) {
-                JobExecution execution =  executions.get(0);
-                JobParameters params = execution.getJobParameters();
-                String snapshotId = params.getString(SnapshotConstants.SNAPSHOT_ID);
-                list.add(new SnapshotSummary(snapshotId));
-                continue;
-            }
-        }
-        
-        return list;
-    }
-
-
     /**
      * @param snapshotId
      * @param contentDir 
      * @return
      */
-    private JobParameters createJobParameters(String snapshotId, String contentDir) {
-        Map<String, JobParameter> map = createIdentifyingJobParameters(snapshotId);
-        map.put(SnapshotConstants.CONTENT_DIR, new JobParameter(contentDir, false));
+    private JobParameters createJobParameters(Long id) {
+        Map<String, JobParameter> map = createIdentifyingJobParameters(id);
         JobParameters params = new JobParameters(map);
         return params;
     }
 
-    private Map<String,JobParameter> createIdentifyingJobParameters(String snapshotId) {
+    private Map<String,JobParameter> createIdentifyingJobParameters(Long id) {
         Map<String, JobParameter> map = new HashMap<>();
-        map.put(SnapshotConstants.SNAPSHOT_ID, new JobParameter(snapshotId, true));
+        map.put(SnapshotConstants.OBJECT_ID, new JobParameter(id, true));
         return map;
     }
-    /**
-     * @param snapshotId
-     * @param ex
-     * @return
-     */
-    private JobStatus createSnapshotStatus(String snapshotId,
-                                                JobExecution ex) {
-        return new JobStatus(snapshotId, SnapshotStatusType.valueOf(ex.getStatus().name()));
-    }
+
     
 }

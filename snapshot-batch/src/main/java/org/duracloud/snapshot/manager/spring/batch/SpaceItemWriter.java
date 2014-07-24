@@ -130,6 +130,8 @@ public class SpaceItemWriter implements ItemWriter<ContentItem>,
                                           Map<String,String> props,
                                           boolean lastItem)
             throws IOException {
+        
+        
         Set<String> propKeys = props.keySet();
         StringBuffer sb = new StringBuffer(100);
         sb.append("{\n  \"" + contentItem.getContentId() + "\": {\n");

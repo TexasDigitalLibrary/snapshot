@@ -24,7 +24,7 @@ import javax.ws.rs.core.MediaType;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.duracloud.snapshot.manager.JobStatus;
+import org.duracloud.snapshot.db.model.SnapshotStatus;
 import org.duracloud.snapshot.manager.SnapshotSummary;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.JacksonFeature;
@@ -114,27 +114,25 @@ public class TestSnapshotRest extends JerseyTest {
         String storeId = props.getProperty("storeId");
         String spaceId = props.getProperty("spaceId");
         String snapshotId = System.currentTimeMillis()+"";
+        String description = "description";
+        SnapshotRequestParams params =
+            new SnapshotRequestParams(host, port, storeId, spaceId, description);
+        Entity<SnapshotRequestParams> entity =
+            Entity.entity(params, MediaType.APPLICATION_JSON);        
         
-        SnapshotRequestParams params = new SnapshotRequestParams(host, port, storeId, spaceId);
-        Entity<SnapshotRequestParams> entity = Entity.entity(params, MediaType.APPLICATION_JSON);
-        
-        
-        JobStatus responseMsg =
+        SnapshotStatus responseMsg =
             target.path("snapshots/"+snapshotId)
                   .request(MediaType.APPLICATION_JSON)
-                  .put(entity, JobStatus.class);
+                  .put(entity, SnapshotStatus.class);
         assertNotNull(responseMsg);
-        assertEquals(snapshotId, responseMsg.getId());
-        assertNotNull(responseMsg.getStatus());
         
         Thread.sleep(5*1000);
         responseMsg =
             target.path(snapshotId)
                   .request(MediaType.APPLICATION_JSON)
-                  .get(JobStatus.class);
+                  .get(SnapshotStatus.class);
         assertNotNull(responseMsg);
-        assertEquals(snapshotId, responseMsg.getId());
-        assertNotNull(responseMsg.getStatus());
+        assertNotNull(responseMsg);
     }
 
 

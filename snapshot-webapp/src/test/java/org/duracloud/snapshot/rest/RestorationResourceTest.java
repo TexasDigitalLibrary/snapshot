@@ -8,11 +8,10 @@
 package org.duracloud.snapshot.rest;
 
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
+import org.duracloud.snapshot.db.model.DuracloudEndPointConfig;
+import org.duracloud.snapshot.db.model.Restoration;
 import org.duracloud.snapshot.manager.SnapshotException;
-import org.duracloud.snapshot.restoration.RestorationRequest;
-import org.duracloud.snapshot.restoration.RestoreRequestConfig;
-import org.duracloud.snapshot.restoration.RestorationRequest.RestoreStatus;
-import org.duracloud.snapshot.restoration.RestorationManager;
+import org.duracloud.snapshot.service.RestorationManager;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
 import org.easymock.TestSubject;
@@ -45,9 +44,10 @@ public class RestorationResourceTest extends SnapshotTestBase {
     @Test
     public void testRestoreSnapshot() throws SnapshotException {
         
-        EasyMock.expect(manager.restoreSnapshot(EasyMock.isA(RestoreRequestConfig.class)))
-                .andReturn(EasyMock.createMock(RestorationRequest.class));
-        replayAll();
+        EasyMock.expect(manager.restoreSnapshot(EasyMock.isA(String.class),
+                                                EasyMock.isA(DuracloudEndPointConfig.class)))
+                .andReturn(EasyMock.createMock(Restoration.class));
+       replayAll();
         RestoreParams params = new RestoreParams();
         params.setHost("hoset");
         params.setPort("443");
@@ -60,9 +60,9 @@ public class RestorationResourceTest extends SnapshotTestBase {
 
     @Test
     public void testSnapshotRestorationComplete() throws SnapshotException {
-        String restorationId = "restoreId";
+        long restorationId = 1000;
         EasyMock.expect(manager.restorationCompleted(restorationId))
-                .andReturn(EasyMock.createMock(RestorationRequest.class));
+                .andReturn(EasyMock.createMock(Restoration.class));
         replayAll();
         resource.restoreComplete(restorationId);
         

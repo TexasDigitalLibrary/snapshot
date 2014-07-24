@@ -30,14 +30,14 @@ import org.apache.commons.lang.StringUtils;
 import org.duracloud.appconfig.domain.NotificationConfig;
 import org.duracloud.common.notification.NotificationManager;
 import org.duracloud.common.notification.NotificationType;
+import org.duracloud.snapshot.db.DatabaseConfig;
+import org.duracloud.snapshot.db.DatabaseInitializer;
 import org.duracloud.snapshot.manager.SnapshotJobManager;
-import org.duracloud.snapshot.manager.config.DatabaseConfig;
+import org.duracloud.snapshot.manager.config.ExecutionListenerConfig;
 import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
-import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
-import org.duracloud.snapshot.manager.spring.batch.DatabaseInitializer;
 import org.duracloud.snapshot.manager.spring.batch.SnapshotExecutionListener;
-import org.duracloud.snapshot.restoration.RestorationConfig;
-import org.duracloud.snapshot.restoration.RestorationManager;
+import org.duracloud.snapshot.service.RestorationManager;
+import org.duracloud.snapshot.service.RestorationManagerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,7 +80,6 @@ public class GeneralResource {
         this.restorationManager = restorationManager;
         this.databaseInitializer = databaseInitializer;
         this.snapshotExecutionListener = snapshotExecutionListener;
-
         this.notificationManager = notificationManager;
     }    
     
@@ -126,7 +125,7 @@ public class GeneralResource {
      * @param initParams
      */
     private void initRestorationResource(InitParams initParams) {
-        RestorationConfig config = new RestorationConfig();
+        RestorationManagerConfig config = new RestorationManagerConfig();
         config.setRestorationRootDir(initParams.getContentDirRoot()
             + File.separator + "restorations");
         config.setDpnEmailAddresses(initParams.getDpnEmailAddresses());
@@ -154,7 +153,7 @@ public class GeneralResource {
      * @param initParams
      */
     private void initExecutionListener(InitParams initParams) {
-        SnapshotNotifyConfig notifyConfig = new SnapshotNotifyConfig();
+        ExecutionListenerConfig notifyConfig = new ExecutionListenerConfig();
         notifyConfig.setSesUsername(initParams.getAwsAccessKey());
         notifyConfig.setSesPassword(initParams.getAwsSecretKey());
         notifyConfig.setDuracloudEmailAddresses(
@@ -163,9 +162,11 @@ public class GeneralResource {
             initParams.getDpnEmailAddresses());
         notifyConfig.setOriginatorEmailAddress(
             initParams.getOriginatorEmailAddress());
+        notifyConfig.setContentRoot(new File(initParams.getContentDirRoot()));
         this.snapshotExecutionListener.init(notifyConfig);
 
     }
+
 
     /**
      * @param initParams

@@ -7,20 +7,15 @@
  */
 package org.duracloud.snapshot.manager.spring.batch;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
+import org.duracloud.snapshot.db.model.Restoration;
+import org.duracloud.snapshot.db.model.Snapshot;
+import org.duracloud.snapshot.db.repo.RestorationRepo;
+import org.duracloud.snapshot.db.repo.SnapshotRepo;
 import org.duracloud.snapshot.manager.SnapshotConstants;
 import org.duracloud.snapshot.manager.SnapshotException;
 import org.duracloud.snapshot.manager.SnapshotNotFoundException;
-import org.duracloud.snapshot.manager.SnapshotSummary;
-import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
-import org.duracloud.snapshot.manager.spring.batch.SnapshotJobBuilder;
-import org.duracloud.snapshot.manager.spring.batch.SnapshotJobManagerImpl;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
@@ -33,8 +28,6 @@ import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
-import org.springframework.batch.core.JobInstance;
-import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -48,7 +41,8 @@ import org.springframework.transaction.PlatformTransactionManager;
  */
 public class SnapshotJobManagerImplTest extends SnapshotTestBase {
 
-    private final String SNAPSHOT_ID = "test-id";
+    private String snapshotName = "test-id";
+    private Long snapshotId = 10101l;
 
     @TestSubject
     private SnapshotJobManagerImpl manager;
@@ -81,20 +75,33 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
     private Job job;
 
     @Mock
-    private SnapshotConfig snapshotConfig;
+    private Snapshot snapshot;
+
+    @Mock
+    private Restoration restoration;
 
     @Mock
     private ApplicationContext context;
 
     @Mock
     private SnapshotJobManagerConfig config;
+    
+    @Mock
+    private RestorationRepo restorationRepo;
+    
+    @Mock
+    private SnapshotRepo snapshotRepo;
+
+
 
     @Before
     public void setup() {
         manager =
             new SnapshotJobManagerImpl(snapshotJobListener,
                                        transactionManager,
-                                       taskExecutor);
+                                       taskExecutor,
+                                       snapshotRepo,
+                                       restorationRepo);
         manager.setApplicationContext(context);
     }
 
@@ -121,13 +128,8 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
 
     @Test
     public void testExecuteSnapshot() throws Exception {
-        EasyMock.expect(snapshotConfig.getSnapshotId())
-                .andReturn(SNAPSHOT_ID)
-                .times(2);
-        EasyMock.expect(snapshotConfig.getContentDir()).andReturn(null);
-        setupContentRootDir();
 
-        EasyMock.expect(jobBuilder.build(snapshotConfig,
+        EasyMock.expect(jobBuilder.build(snapshot,
                                          config,
                                          snapshotJobListener,
                                          jobRepository,
@@ -143,54 +145,41 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
 
         EasyMock.expect(jobExecution.getStatus())
                 .andReturn(BatchStatus.COMPLETED);
+        setupSnapshotRepo();
+        
         replayAll();
 
-        manager.executeSnapshot(snapshotConfig);
+        
+        manager.executeSnapshot(snapshotName);
 
         JobParameters jobParameters = jobParams.getValue();
 
-        Assert.assertEquals(SNAPSHOT_ID,
-                            jobParameters.getString(SnapshotConstants.SNAPSHOT_ID));
-        Assert.assertTrue(jobParameters.getString(SnapshotConstants.CONTENT_DIR)
-                                       .endsWith(SNAPSHOT_ID));
+        Assert.assertEquals(snapshotId,
+                            jobParameters.getLong(SnapshotConstants.OBJECT_ID));
 
     }
 
-    private void setupContentRootDir() {
-        EasyMock.expect(config.getContentRootDir()).andReturn(getTempDir());
+    /**
+     * 
+     */
+    private void setupSnapshotRepo() {
+        EasyMock.expect(snapshotRepo.findByName(snapshotName)).andReturn(snapshot);
+        EasyMock.expect(snapshot.getId()).andReturn(snapshotId);
     }
+
     
     @Test
     public void testGetSnapshotStatus() throws SnapshotNotFoundException, SnapshotException{
-        EasyMock.expect(jobExecution.getStatus()).andReturn(BatchStatus.COMPLETED);
         EasyMock.expect(jobRepository.getLastJobExecution(EasyMock.isA(String.class),
                                                           EasyMock.isA(JobParameters.class)))
                 .andReturn(jobExecution);
-        replayAll();
-        Assert.assertNotNull(this.manager.getStatus(SNAPSHOT_ID));
-    }
-    
-    @Test
-    public void testGetSnapshots() throws SnapshotException{
-        String snapshotId = "snapshot";
-        List<JobInstance> jobs = new ArrayList<>();
-        JobInstance job = new JobInstance(1l, SnapshotConstants.SNAPSHOT_JOB_NAME);
-        jobs.add(job);
-
-        List<JobExecution> executions = new ArrayList<>();
-        Map<String,JobParameter> parameters = new HashMap<>();
-        parameters.put(SnapshotConstants.SNAPSHOT_ID,new JobParameter(snapshotId));
-        executions.add(new JobExecution(job, new JobParameters(parameters)));
-
-        EasyMock.expect(this.jobExplorer.getJobInstances(SnapshotConstants.SNAPSHOT_JOB_NAME, 0, 1000)).andReturn(jobs);
-        EasyMock.expect(this.jobExplorer.getJobExecutions(job)).andReturn(executions);
+        
+        EasyMock.expect(jobExecution.getStatus()).andReturn(BatchStatus.COMPLETED);
+        
+        setupSnapshotRepo();
         
         replayAll();
-        
-        List<SnapshotSummary> snapshots = this.manager.getSnapshotList();
-        Assert.assertNotNull(snapshots);
-        Assert.assertEquals(jobs.size(), snapshots.size());
-        Assert.assertEquals(snapshotId, snapshots.get(0).getSnapshotId());
-        
+        Assert.assertNotNull(this.manager.getStatus(snapshotName));
     }
+
 }

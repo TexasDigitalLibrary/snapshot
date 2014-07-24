@@ -16,7 +16,7 @@
   </parent>
 
   <properties>
-    <spring.batch.version>2.2.2.RELEASE</spring.batch.version>
+    <spring.batch.version>3.0.1.RELEASE</spring.batch.version>
     <mysql.driver.version>5.1.28</mysql.driver.version>
   </properties>
 
@@ -92,6 +92,13 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    
+    <dependency>
+      <groupId>org.duracloud.snapshot</groupId>
+      <artifactId>snapshot-common-db</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- Spring Core -->
     <dependency>
       <groupId>org.springframework</groupId>

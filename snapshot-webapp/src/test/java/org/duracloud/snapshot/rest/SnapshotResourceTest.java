@@ -7,22 +7,20 @@
  */
 package org.duracloud.snapshot.rest;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.concurrent.Future;
 
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
+import org.duracloud.snapshot.db.model.Snapshot;
+import org.duracloud.snapshot.db.model.SnapshotStatus;
+import org.duracloud.snapshot.db.repo.SnapshotRepo;
 import org.duracloud.snapshot.manager.SnapshotException;
 import org.duracloud.snapshot.manager.SnapshotJobManager;
 import org.duracloud.snapshot.manager.SnapshotNotFoundException;
-import org.duracloud.snapshot.manager.JobStatus;
-import org.duracloud.snapshot.manager.JobStatus.SnapshotStatusType;
-import org.duracloud.snapshot.manager.config.SnapshotConfig;
-import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
 import org.easymock.TestSubject;
 import org.junit.Test;
+import org.springframework.batch.core.BatchStatus;
 
 /**
  * @author Daniel Bernstein
@@ -35,10 +33,16 @@ public class SnapshotResourceTest extends SnapshotTestBase {
     private SnapshotJobManager manager;
     
     @Mock 
-    private Future<JobStatus> future;
+    private Future<BatchStatus> future;
+    
+    @Mock
+    private SnapshotRepo snapshotRepo;
     
     @TestSubject
     private SnapshotResource resource;
+
+    @Mock
+    private Snapshot snapshot;
     
     /* (non-Javadoc)
      * @see org.duracloud.snapshot.common.test.EasyMockTestBase#setup()
@@ -46,21 +50,22 @@ public class SnapshotResourceTest extends SnapshotTestBase {
     @Override
     public void setup() {
         super.setup();
-        resource = new SnapshotResource(manager);
+        resource = new SnapshotResource(manager, snapshotRepo);
     }
     
     @Test
     public void testGetStatusSuccess() throws SnapshotException {
-        EasyMock.expect(manager.getStatus(EasyMock.isA(String.class)))
-                .andReturn(new JobStatus("snapshotId", SnapshotStatusType.UNKNOWN));
+        
+        EasyMock.expect(snapshotRepo.findByName("snapshotId")).andReturn(snapshot);
+        EasyMock.expect(snapshot.getStatus()).andReturn(SnapshotStatus.SNAPSHOT_COMPLETE);
+        
         replayAll();
         resource.getStatus("snapshotId");
     }
 
     @Test
     public void testGetStatusNotFound() throws SnapshotException {
-        EasyMock.expect(manager.getStatus(EasyMock.isA(String.class)))
-                .andThrow(new SnapshotNotFoundException("test"));
+        EasyMock.expect(snapshotRepo.findByName("snapshotId")).andReturn(null);
         replayAll();
         resource.getStatus("snapshotId");
     }
@@ -71,24 +76,25 @@ public class SnapshotResourceTest extends SnapshotTestBase {
         String port = "444";
         String storeId = "storeId";
         String spaceId = "spaceId";
-        String snapshotId = "snapshotId";
-        
-        Capture<SnapshotConfig> snapshotConfigCapture = new Capture<>();
-        EasyMock.expect(manager.executeSnapshotAsync(
-                     EasyMock.capture(snapshotConfigCapture)))
+        String snapshotId = "snapshot-name";
+        String description = "description";
+
+        EasyMock.expect(manager.executeSnapshotAsync(snapshotId))
                 .andReturn(future);
 
-        
-        replayAll();
-        
-        resource.create(snapshotId, new SnapshotRequestParams(host, port, storeId, spaceId));
+        EasyMock.expect(snapshotRepo.findByName(snapshotId)).andReturn(null);
 
-        SnapshotConfig snapshotConfig = snapshotConfigCapture.getValue();
-        assertEquals(host, snapshotConfig.getHost());
-        assertEquals(Integer.parseInt(port), snapshotConfig.getPort());
-        assertEquals(storeId, snapshotConfig.getStoreId());
-        assertEquals(spaceId, snapshotConfig.getSpaceId());
-        assertEquals(snapshotId, snapshotConfig.getSnapshotId());
+        EasyMock.expect(snapshotRepo.saveAndFlush(EasyMock.isA(Snapshot.class)))
+                .andReturn(snapshot);
+
+        replayAll();
+
+        resource.create(snapshotId, new SnapshotRequestParams(host,
+                                                              port,
+                                                              storeId,
+                                                              spaceId,
+                                                              description));
+
     }
 
 

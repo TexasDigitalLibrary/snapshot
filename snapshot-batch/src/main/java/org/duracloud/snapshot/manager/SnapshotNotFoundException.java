@@ -13,7 +13,7 @@ package org.duracloud.snapshot.manager;
  *         Date: Feb 12, 2014
  */
 public class SnapshotNotFoundException extends SnapshotException {
-    public SnapshotNotFoundException(String message){
-        super(message,null);
+    public SnapshotNotFoundException(String snapshotId){
+        super("A snapshot with id=" + snapshotId + " does not exist.",null);
     }
 }

@@ -24,9 +24,11 @@ import org.duracloud.retrieval.mgmt.OutputWriter;
 import org.duracloud.retrieval.source.DuraStoreStitchingRetrievalSource;
 import org.duracloud.retrieval.source.RetrievalSource;
 import org.duracloud.retrieval.util.StoreClientUtil;
+import org.duracloud.snapshot.db.ContentDirUtils;
+import org.duracloud.snapshot.db.model.DuracloudEndPointConfig;
+import org.duracloud.snapshot.db.model.Snapshot;
 import org.duracloud.snapshot.manager.SnapshotConstants;
 import org.duracloud.snapshot.manager.SnapshotException;
-import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +58,7 @@ public class SnapshotJobBuilder {
     private static final String CONTENT_PROPERTIES_JSON_FILENAME =
         "content-properties.json";
 
-    public Job build(SnapshotConfig snapshotConfig,
+    public Job build(Snapshot snapshot,
                      SnapshotJobManagerConfig config,
                      JobExecutionListener jobListener,
                      JobRepository jobRepository,
@@ -65,18 +67,20 @@ public class SnapshotJobBuilder {
                      TaskExecutor taskExecutor) throws SnapshotException {
         Job job;
         try {
+            
+            DuracloudEndPointConfig source = snapshot.getSource();
             StoreClientUtil clientUtil = new StoreClientUtil();
 
             ContentStore contentStore =
-                clientUtil.createContentStore(snapshotConfig.getHost(),
-                                              snapshotConfig.getPort(),
-                                              snapshotConfig.getContext(),
+                clientUtil.createContentStore(source.getHost(),
+                                              source.getPort(),
+                                              SnapshotConstants.DURASTORE_CONTEXT,
                                               config.getDuracloudUsername(),
                                               config.getDuracloudPassword(),
-                                              snapshotConfig.getStoreId());
+                                              source.getStoreId());
 
             List<String> spaces = new ArrayList<>();
-            spaces.add(snapshotConfig.getSpaceId());
+            spaces.add(source.getSpaceId());
 
             RetrievalSource retrievalSource =
                 new DuraStoreStitchingRetrievalSource(contentStore,
@@ -86,7 +90,10 @@ public class SnapshotJobBuilder {
             ItemReader<ContentItem> itemReader =
                 new SpaceItemReader(retrievalSource);
 
-            File contentDir = SnapshotUtils.resolveContentDir(snapshotConfig, config);
+            File contentDir = new File(ContentDirUtils.getDestinationPath(snapshot, config.getContentRootDir()));
+            if(!contentDir.exists()){
+                contentDir.mkdirs();
+            }
 
             File workDir = config.getWorkDir();
             OutputWriter outputWriter = new CSVFileOutputWriter(workDir);

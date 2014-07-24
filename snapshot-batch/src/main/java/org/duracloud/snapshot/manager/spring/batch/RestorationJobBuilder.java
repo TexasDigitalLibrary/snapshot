@@ -11,9 +11,11 @@ import java.io.File;
 
 import org.duracloud.client.ContentStore;
 import org.duracloud.retrieval.util.StoreClientUtil;
+import org.duracloud.snapshot.db.ContentDirUtils;
+import org.duracloud.snapshot.db.model.DuracloudEndPointConfig;
+import org.duracloud.snapshot.db.model.Restoration;
 import org.duracloud.snapshot.manager.SnapshotConstants;
 import org.duracloud.snapshot.manager.SnapshotException;
-import org.duracloud.snapshot.manager.config.SnapshotConfig;
 import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
 import org.duracloud.sync.endpoint.DuraStoreSyncEndpoint;
 import org.duracloud.sync.endpoint.SyncEndpoint;
@@ -37,8 +39,9 @@ import org.springframework.transaction.PlatformTransactionManager;
  */
 public class RestorationJobBuilder {
     private static Logger log = LoggerFactory.getLogger(RestorationJobBuilder.class);
+    private File contentRootDir;
 
-    public Job build(SnapshotConfig restoreConfig,
+    public Job build(Restoration restoration,
                      SnapshotJobManagerConfig jobManagerConfig,
                      JobExecutionListener jobListener,
                      JobRepository jobRepository,
@@ -46,24 +49,28 @@ public class RestorationJobBuilder {
                      PlatformTransactionManager transactionManager,
                      TaskExecutor taskExecutor) throws SnapshotException {
         Job job;
+        
+        DuracloudEndPointConfig destination = restoration.getDestination();
         try {
             StoreClientUtil clientUtil = new StoreClientUtil();
 
             ContentStore contentStore =
-                clientUtil.createContentStore(restoreConfig.getHost(),
-                                              restoreConfig.getPort(),
-                                              restoreConfig.getContext(),
+                clientUtil.createContentStore(destination.getHost(),
+                                              destination.getPort(),
+                                              SnapshotConstants.DURASTORE_CONTEXT,
                                               jobManagerConfig.getDuracloudUsername(),
                                               jobManagerConfig.getDuracloudPassword(),
-                                              restoreConfig.getStoreId());
+                                              destination.getStoreId());
 
             SyncEndpoint endpoint =
                 new DuraStoreSyncEndpoint(contentStore,
                                           jobManagerConfig.getDuracloudUsername(),
-                                          restoreConfig.getSpaceId(),
+                                          destination.getSpaceId(),
                                           false);
             
-            File watchDir = restoreConfig.getContentDir();
+            File watchDir =
+                new File(ContentDirUtils.getSourcePath(restoration.getId(),
+                                                       this.contentRootDir));
 
             FileSystemReader reader =
                 new FileSystemReader(watchDir);
@@ -72,7 +79,7 @@ public class RestorationJobBuilder {
                 new SyncWriter(watchDir,
                                endpoint,
                                contentStore,
-                               restoreConfig.getSpaceId());
+                               destination.getSpaceId());
 
             SimpleStepFactoryBean<File, File> stepFactory =
                 new SimpleStepFactoryBean<>();

@@ -10,7 +10,7 @@ package org.duracloud.snapshot.rest;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.codehaus.jackson.map.annotate.JsonDeserialize;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
-import org.duracloud.snapshot.restoration.RestoreRequestConfig;
+import org.duracloud.snapshot.service.RestorationConfig;
 import org.hibernate.validator.constraints.NotBlank;
 
 import com.google.common.collect.Sets;
@@ -98,15 +98,6 @@ public class RestoreParams {
     public String toString() {
         return ToStringBuilder.reflectionToString(this);
     }
-    /**
-     * @return
-     */
-    public RestoreRequestConfig toRestoreRequestConfig() {
-        return new RestoreRequestConfig(host,
-                                        Integer.valueOf(port),
-                                        storeId,
-                                        spaceId,
-                                        snapshotId);
-    }
+
     
 }

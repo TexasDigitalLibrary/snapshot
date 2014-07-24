@@ -7,17 +7,21 @@
  */
 package org.duracloud.snapshot.manager.spring.batch;
 
-import static org.junit.Assert.assertTrue;
 import static org.easymock.EasyMock.expect;
+import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.duracloud.common.notification.NotificationManager;
 import org.duracloud.common.notification.NotificationType;
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
+import org.duracloud.snapshot.db.model.Snapshot;
+import org.duracloud.snapshot.db.repo.RestorationRepo;
+import org.duracloud.snapshot.db.repo.SnapshotRepo;
 import org.duracloud.snapshot.manager.SnapshotConstants;
-import org.duracloud.snapshot.manager.config.SnapshotNotifyConfig;
+import org.duracloud.snapshot.manager.config.ExecutionListenerConfig;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.Mock;
@@ -36,20 +40,32 @@ import org.springframework.batch.core.JobParameters;
  */
 public class SnapshotExecutionListenerTest extends SnapshotTestBase {
 
-    private String snapshotID = "snapshot-id";
+    private Long snapshotID = 101010101l;
+    private String snapshotName = "snapshot-name";
     private String contentDir = "content-dir";
     private JobParameters jobParams;
 
     @Mock
     private NotificationManager notificationManager;
+
     @Mock
-    private SnapshotNotifyConfig notifyConfig;
+    private ExecutionListenerConfig executionConfig;
+
     @Mock
     private JobExecution jobExecution;
+
+    @Mock
+    private SnapshotRepo snapshotRepo;
+    
+    @Mock
+    private RestorationRepo restorationRepo;
     
     @Mock
     private JobInstance job;
 
+    @Mock 
+    private Snapshot snapshot;
+    
     @TestSubject
     private SnapshotExecutionListener executionListener;
 
@@ -57,14 +73,15 @@ public class SnapshotExecutionListenerTest extends SnapshotTestBase {
     public void setup() {
         super.setup();
         executionListener =
-            new SnapshotExecutionListener(notificationManager);
+            new SnapshotExecutionListener(notificationManager, snapshotRepo, restorationRepo);
 
         Map<String, JobParameter> jobParamMap = new HashMap<>();
-        jobParamMap.put(SnapshotConstants.SNAPSHOT_ID,
+        jobParamMap.put(SnapshotConstants.OBJECT_ID,
                         new JobParameter(snapshotID));
-        jobParamMap.put(SnapshotConstants.CONTENT_DIR,
-                        new JobParameter(contentDir));
         jobParams = new JobParameters(jobParamMap);
+        executionListener.init(executionConfig);
+        
+        
     }
 
     @Test
@@ -86,14 +103,14 @@ public class SnapshotExecutionListenerTest extends SnapshotTestBase {
             EasyMock.eq(duracloudEmail));
         EasyMock.expectLastCall();
 
-        EasyMock.expect(notifyConfig.getAllEmailAddresses())
+        EasyMock.expect(executionConfig.getAllEmailAddresses())
                 .andReturn(new String[]{dpnEmail, duracloudEmail});
 
         replayAll();
 
         executionListener.afterJob(jobExecution);
         String message = messageCapture.getValue();
-        assertTrue(message.contains(snapshotID));
+        assertTrue(message.contains(snapshotName));
         assertTrue(message.contains(contentDir));
         assertTrue(message.contains("preservation"));
     }
@@ -108,6 +125,13 @@ public class SnapshotExecutionListenerTest extends SnapshotTestBase {
         expect(job.getJobName()).andReturn(jobName);
         
         EasyMock.expect(jobExecution.getJobInstance()).andReturn(job);
+        
+        expect(snapshotRepo.getOne(snapshotID)).andReturn(snapshot);
+
+        expect(executionConfig.getContentRoot()).andReturn(new File(contentDir));
+        
+        expect(snapshot.getName()).andReturn(snapshotName).atLeastOnce();
+
     }
 
     @Test
@@ -127,14 +151,14 @@ public class SnapshotExecutionListenerTest extends SnapshotTestBase {
             EasyMock.eq(duracloudEmail));
         EasyMock.expectLastCall();
 
-        EasyMock.expect(notifyConfig.getDuracloudEmailAddresses())
+        EasyMock.expect(executionConfig.getDuracloudEmailAddresses())
                 .andReturn(new String[]{duracloudEmail});
 
         replayAll();
 
         executionListener.afterJob(jobExecution);
         String message = messageCapture.getValue();
-        assertTrue(message.contains(snapshotID));
+        assertTrue(message.contains(snapshotName));
         assertTrue(message.contains(contentDir));
         assertTrue(message.contains("failed"));
     }

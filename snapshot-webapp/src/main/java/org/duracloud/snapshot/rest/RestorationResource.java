@@ -21,8 +21,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.duracloud.snapshot.restoration.RestorationRequest;
-import org.duracloud.snapshot.restoration.RestorationManager;
+import org.duracloud.snapshot.db.model.DuracloudEndPointConfig;
+import org.duracloud.snapshot.db.model.Restoration;
+import org.duracloud.snapshot.service.RestorationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,10 +61,15 @@ public class RestorationResource {
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response restoreSnapshot(@Valid RestoreParams restoreParameters) {
+    public Response restoreSnapshot(@Valid RestoreParams params) {
         try {
-            RestorationRequest restorationRequest =
-                this.restorationManager.restoreSnapshot(restoreParameters.toRestoreRequestConfig());
+            DuracloudEndPointConfig destination = new DuracloudEndPointConfig();
+            destination.setHost(params.getHost());
+            destination.setPort(Integer.valueOf(params.getPort()));
+            destination.setStoreId(params.getStoreId());
+            destination.setSpaceId(params.getSpaceId());
+            Restoration restorationRequest =
+                this.restorationManager.restoreSnapshot(params.getSnapshotId(), destination);
             return Response.ok().entity(restorationRequest).build();
         }catch(Exception ex){
             log.error(ex.getMessage(),ex);
@@ -77,10 +83,10 @@ public class RestorationResource {
     @Path("{restorationId}/restore-complete")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    public Response restoreComplete(@PathParam("restorationId") String restorationId) {
+    public Response restoreComplete(@PathParam("restorationId") Long restorationId) {
 
         try {
-            RestorationRequest status =
+            Restoration status =
                 this.restorationManager.restorationCompleted(restorationId);
             return Response.ok().entity(status).build();
         }catch(Exception ex){
