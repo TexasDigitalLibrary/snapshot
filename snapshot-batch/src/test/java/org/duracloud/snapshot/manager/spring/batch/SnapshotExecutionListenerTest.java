@@ -73,7 +73,9 @@ public class SnapshotExecutionListenerTest extends SnapshotTestBase {
     public void setup() {
         super.setup();
         executionListener =
-            new SnapshotExecutionListener(notificationManager, snapshotRepo, restorationRepo);
+            new SnapshotExecutionListener();
+        
+        executionListener.setNotificationManager(notificationManager);
 
         Map<String, JobParameter> jobParamMap = new HashMap<>();
         jobParamMap.put(SnapshotConstants.OBJECT_ID,

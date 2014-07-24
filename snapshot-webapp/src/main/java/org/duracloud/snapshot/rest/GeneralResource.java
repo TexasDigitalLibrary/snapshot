@@ -66,7 +66,7 @@ public class GeneralResource {
    
     private SnapshotJobManager jobManager;
     private DatabaseInitializer databaseInitializer;
-    private SnapshotExecutionListener snapshotExecutionListener;
+    private SnapshotExecutionListener jobListener;
     private RestorationManager restorationManager;
     private NotificationManager notificationManager;
     
@@ -74,12 +74,12 @@ public class GeneralResource {
     public GeneralResource(SnapshotJobManager jobManager, 
                             RestorationManager restorationManager,
                             DatabaseInitializer databaseInitializer,
-                            SnapshotExecutionListener snapshotExecutionListener,
+                            SnapshotExecutionListener jobListener,
                             NotificationManager notificationManager) {
         this.jobManager = jobManager;
         this.restorationManager = restorationManager;
         this.databaseInitializer = databaseInitializer;
-        this.snapshotExecutionListener = snapshotExecutionListener;
+        this.jobListener = jobListener;
         this.notificationManager = notificationManager;
     }    
     
@@ -163,7 +163,7 @@ public class GeneralResource {
         notifyConfig.setOriginatorEmailAddress(
             initParams.getOriginatorEmailAddress());
         notifyConfig.setContentRoot(new File(initParams.getContentDirRoot()));
-        this.snapshotExecutionListener.init(notifyConfig);
+        this.jobListener.init(notifyConfig);
 
     }
 

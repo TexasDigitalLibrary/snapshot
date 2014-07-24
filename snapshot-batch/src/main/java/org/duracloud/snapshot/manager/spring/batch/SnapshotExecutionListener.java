@@ -7,13 +7,15 @@
  */
 package org.duracloud.snapshot.manager.spring.batch;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import org.duracloud.common.notification.NotificationManager;
 import org.duracloud.common.notification.NotificationType;
 import org.duracloud.snapshot.db.ContentDirUtils;
 import org.duracloud.snapshot.db.model.Restoration;
 import org.duracloud.snapshot.db.model.Snapshot;
-import org.duracloud.snapshot.db.repo.RestorationRepo;
-import org.duracloud.snapshot.db.repo.SnapshotRepo;
+import org.duracloud.snapshot.db.model.SnapshotStatus;
 import org.duracloud.snapshot.manager.SnapshotConstants;
 import org.duracloud.snapshot.manager.config.ExecutionListenerConfig;
 import org.slf4j.Logger;
@@ -22,38 +24,72 @@ import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Erik Paulsson
  *         Date: 2/10/14
  */
+@Component("jobListener")
 public class SnapshotExecutionListener implements JobExecutionListener {
 
     private static final Logger log =
         LoggerFactory.getLogger(SnapshotExecutionListener.class);
 
+    @Autowired
     private NotificationManager notificationManager;
     private ExecutionListenerConfig config;
-    private SnapshotRepo snapshotRepo;
-    private RestorationRepo restorationRepo;
     
+    /**
+     * 
+     */
+    public SnapshotExecutionListener() {
+        // TODO Auto-generated constructor stub
+    }
     
-    public SnapshotExecutionListener(
-        NotificationManager notificationManager, SnapshotRepo snapshotRepo,
-        RestorationRepo restorationRepo) {
+    /**
+     * @param notificationManager the notificationManager to set
+     */
+    public void setNotificationManager(NotificationManager notificationManager) {
         this.notificationManager = notificationManager;
-        this.snapshotRepo = snapshotRepo;
-        this.restorationRepo = restorationRepo;
+    }
+    
+    
+
+    private EntityManager entityManager;
+    @PersistenceContext
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     public void init(ExecutionListenerConfig config) {
         this.config = config;
     }
 
+    @Transactional
     public void beforeJob(JobExecution jobExecution) {
+        JobParameters jobParams = jobExecution.getJobParameters();
+        BatchStatus status = jobExecution.getStatus();
 
+        Long objectId = jobParams.getLong(SnapshotConstants.OBJECT_ID);
+        String jobName = jobExecution.getJobInstance().getJobName();
+       
+        if(jobName.equals(SnapshotConstants.SNAPSHOT_JOB_NAME)){
+            //For some reason, when using the jpa repos here, the underlying session was
+            //always null - no matter what I tried.  It seems to have something to do with 
+            //the fact that this code is executed asynchronously in the spring batch generated
+            //thread rather than being executed in the web request life cycle. (dbernstein)
+            //As a workaround I'm injecting the entitymanager and using it directly.
+            
+            Snapshot snapshot = entityManager.find(Snapshot.class, objectId);
+            snapshot.setStatus(SnapshotStatus.TRANSFERRING_FROM_DURACLOUD);
+            entityManager.flush();
+        }
     }
 
+    @Transactional
     public void afterJob(JobExecution jobExecution) {
         JobParameters jobParams = jobExecution.getJobParameters();
         BatchStatus status = jobExecution.getStatus();
@@ -62,13 +98,19 @@ public class SnapshotExecutionListener implements JobExecutionListener {
         String jobName = jobExecution.getJobInstance().getJobName();
        
         if(jobName.equals(SnapshotConstants.SNAPSHOT_JOB_NAME)){
-            Snapshot snapshot = snapshotRepo.getOne(objectId);
+            //For some reason, when using the jpa repos here, the underlying session was
+            //always null - no matter what I tried.  It seems to have something to do with 
+            //the fact that this code is executed asynchronously in the spring batch generated
+            //thread rather than being executed in the web request life cycle. (dbernstein)
+            //As a workaround I'm injecting the entitymanager and using it directly.
+            
+            Snapshot snapshot = entityManager.find(Snapshot.class, objectId);
             String snapshotName = snapshot.getName();
             String snapshotPath = ContentDirUtils.getDestinationPath(snapshot, config.getContentRoot());
             log.debug("Completed snapshot: {} with status: {}", snapshotName, status);
             handleAfterSnapshotJob(status, snapshot, snapshotPath);
         }else if(jobName.equals(SnapshotConstants.RESTORE_JOB_NAME)){
-            Restoration restoration = restorationRepo.getOne(objectId);
+            Restoration restoration = entityManager.find(Restoration.class, objectId);
             String restorationPath = ContentDirUtils.getSourcePath(restoration.getId(), config.getContentRoot());
             log.debug("Completed restoration: {} with status: {}", restoration.getId(), status);
             handleAfterRestorationJob(status, restoration, restorationPath);
@@ -95,6 +137,8 @@ public class SnapshotExecutionListener implements JobExecutionListener {
                 "A DuraCloud content snapshot has been transferred from " +
                 "bridge storage to DuraCloud";
             sendEmail(subject, message, this.config.getDuracloudEmailAddresses());
+            
+
         } else {
             // Job failed.  Email DuraSpace team about failed snapshot attempt.
             String subject =
@@ -132,6 +176,9 @@ public class SnapshotExecutionListener implements JobExecutionListener {
                 "\nsnapshot-path=" + snapshotPath;
             sendEmail(subject, message,
                       config.getAllEmailAddresses());
+            
+            snapshot.setStatus(SnapshotStatus.WAITING_FOR_DPN);
+            this.entityManager.flush();
         } else {
             // Job failed.  Email DuraSpace team about failed snapshot attempt.
             String subject =

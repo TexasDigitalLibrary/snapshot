@@ -28,6 +28,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.duracloud.snapshot.db.ContentDirUtils;
 import org.duracloud.snapshot.db.model.DuracloudEndPointConfig;
 import org.duracloud.snapshot.db.model.Snapshot;
+import org.duracloud.snapshot.db.model.SnapshotStatus;
 import org.duracloud.snapshot.db.repo.SnapshotRepo;
 import org.duracloud.snapshot.manager.SnapshotJobManager;
 import org.duracloud.snapshot.manager.SnapshotNotFoundException;
@@ -142,6 +143,7 @@ public class SnapshotResource {
             snapshot.setName(snapshotId);
             snapshot.setSource(source);
             snapshot.setDescription(params.getDescription());
+            snapshot.setStatus(SnapshotStatus.INITIALIZED);
             this.snapshotRepo.saveAndFlush(snapshot);
 
             this.jobManager.executeSnapshot(snapshotId);

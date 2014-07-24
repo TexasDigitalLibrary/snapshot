@@ -10,10 +10,8 @@ package org.duracloud.snapshot.db.repo;
 import java.util.List;
 
 import org.duracloud.snapshot.db.model.Snapshot;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Daniel Bernstein
@@ -34,7 +32,5 @@ public interface SnapshotRepo extends JpaRepository<Snapshot, Long> {
      * @return
      */
     public Snapshot findByName(String snapshotId);
-    
-    
 
 }

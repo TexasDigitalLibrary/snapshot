@@ -18,6 +18,8 @@ import javax.persistence.Enumerated;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import org.springframework.context.annotation.Lazy;
+
 /**
  * @author Daniel Bernstein
  *         Date: Jul 21, 2014

@@ -9,13 +9,13 @@ package org.duracloud.snapshot.db;
 
 import java.util.List;
 
+import org.apache.commons.dbcp.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.DatabasePopulator;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
@@ -36,10 +36,10 @@ public class DatabaseInitializer implements ApplicationContextAware{
 
     private List<Resource> schemas;
     
-    private DriverManagerDataSource dataSource;
+    private BasicDataSource dataSource;
     
     private ApplicationContext context;
-    public DatabaseInitializer(DriverManagerDataSource dataSource, List<Resource> dropSchemas, List<Resource> schemas){
+    public DatabaseInitializer(BasicDataSource dataSource, List<Resource> dropSchemas, List<Resource> schemas){
         this.dataSource = dataSource;
         this.dropSchemas = dropSchemas;
         this.schemas = schemas;
