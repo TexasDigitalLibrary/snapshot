@@ -126,39 +126,6 @@ public class SnapshotJobManagerImpl
         return this.jobLauncher != null;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.duracloud.snapshot.manager.SnapshotJobManager#executeSnapshotAsync(org.duracloud.snapshot.manager.config.SnapshotConfig)
-     */
-    @Override
-    public Future<BatchStatus> executeSnapshotAsync(final String snapshotId)
-        throws SnapshotException {
-        checkInitialized();
-
-        final Snapshot snapshot = getSnapshot(snapshotId);
-        
-        final JobRequest jobRequest = buildJob(snapshot);
-
-        return executeAsync(jobRequest);
-    }
-
-    /**
-     * @param jobRequest
-     * @return
-     */
-    private Future<BatchStatus> executeAsync(final JobRequest jobRequest) {
-        FutureTask<BatchStatus> future = new FutureTask(new Callable() {
-            public BatchStatus call() throws SnapshotException {
-                    return executeJob(jobRequest);
-            }
-        });
-        
-
-        this.executor.execute(future);
-        
-        return future;
-    }
-    
 
     private Snapshot getSnapshot(String snapshotId) throws SnapshotNotFoundException{
         Snapshot snapshot = this.snapshotRepo.findByName(snapshotId);
@@ -189,10 +156,9 @@ public class SnapshotJobManagerImpl
      * @see org.duracloud.snapshot.manager.SnapshotJobManager#executeRestoration(java.lang.Long)
      */
     @Override
-    public Future<BatchStatus> executeRestoration(Long restorationId)
+    public BatchStatus executeRestoration(Long restorationId)
         throws SnapshotException {
-        
-        return executeAsync(buildJob(getRestoration(restorationId)));
+        return executeJob(buildJob(getRestoration(restorationId)));
     }
     
 
@@ -251,7 +217,6 @@ public class SnapshotJobManagerImpl
     public BatchStatus executeSnapshot(String snapshotId)
         throws SnapshotException {
         checkInitialized();
-        
         JobRequest job = buildJob(getSnapshot(snapshotId));
         return executeJob(job);
     }

@@ -79,8 +79,8 @@ public class SnapshotResourceTest extends SnapshotTestBase {
         String snapshotId = "snapshot-name";
         String description = "description";
 
-        EasyMock.expect(manager.executeSnapshotAsync(snapshotId))
-                .andReturn(future);
+        EasyMock.expect(manager.executeSnapshot(snapshotId))
+                .andReturn(BatchStatus.UNKNOWN);
 
         EasyMock.expect(snapshotRepo.findByName(snapshotId)).andReturn(null);
 

@@ -7,8 +7,6 @@
  */
 package org.duracloud.snapshot.manager;
 
-import java.util.concurrent.Future;
-
 import org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig;
 import org.springframework.batch.core.BatchStatus;
 
@@ -32,15 +30,6 @@ public interface SnapshotJobManager  {
      */
     void init(SnapshotJobManagerConfig duracloudCredential);
 
-    /**
-     * This method of executing a snapshot is guaranteed to be an asynchronous version of executeSnapshot().
-     * That is, the method will return after creating the job and queuing it up, rather than waiting until
-     * it has been executed.
-     * @param snapshotId
-     * @return
-     */
-    Future<BatchStatus>  executeSnapshotAsync(String snapshotId)
-        throws SnapshotException;
 
     /**
      * This method creates an underlying job and executes it. 
@@ -65,7 +54,7 @@ public interface SnapshotJobManager  {
     /**
      * @param snapshotConfig
      */
-    public Future<BatchStatus> executeRestoration(Long restorationId)
+    public BatchStatus executeRestoration(Long restorationId)
         throws SnapshotException;
     
 }

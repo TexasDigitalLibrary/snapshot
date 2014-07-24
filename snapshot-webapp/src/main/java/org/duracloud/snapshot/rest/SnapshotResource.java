@@ -144,7 +144,7 @@ public class SnapshotResource {
             snapshot.setDescription(params.getDescription());
             this.snapshotRepo.saveAndFlush(snapshot);
 
-            this.jobManager.executeSnapshotAsync(snapshotId);
+            this.jobManager.executeSnapshot(snapshotId);
             return Response.created(null)
                            .entity(new ResponseDetails("success"))
                            .build();

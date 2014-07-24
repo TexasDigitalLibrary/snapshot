@@ -10,7 +10,6 @@ package org.duracloud.snapshot.restoration;
 import static org.easymock.EasyMock.isA;
 
 import java.io.File;
-import java.util.concurrent.Future;
 
 import org.duracloud.common.notification.NotificationManager;
 import org.duracloud.common.notification.NotificationType;
@@ -26,7 +25,6 @@ import org.duracloud.snapshot.manager.SnapshotException;
 import org.duracloud.snapshot.manager.SnapshotInProcessException;
 import org.duracloud.snapshot.manager.SnapshotJobManager;
 import org.duracloud.snapshot.manager.SnapshotNotFoundException;
-import org.duracloud.snapshot.service.NoRestorationInProcessException;
 import org.duracloud.snapshot.service.RestorationManagerConfig;
 import org.duracloud.snapshot.service.RestorationManagerImpl;
 import org.duracloud.snapshot.service.RestorationNotFoundException;
@@ -156,9 +154,8 @@ public class RestorationManagerTest  extends SnapshotTestBase {
     public void testSnapshotRestorationCompleted() throws SnapshotException{
         setupRestoreCall();
         
-        Future<BatchStatus> future = null;
         EasyMock.expect(this.jobManager.executeRestoration(EasyMock.isA(Long.class)))
-                .andReturn(future);
+                .andReturn(BatchStatus.UNKNOWN);
         
         setupGetRestoreStatus();
         restoration.setMemo(EasyMock.isA(String.class));
