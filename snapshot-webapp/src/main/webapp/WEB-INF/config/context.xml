@@ -12,36 +12,7 @@
   <bean id="emailNotifier" 
         class="org.duracloud.common.notification.EmailNotifier"/>
 
-  <!-- 
-  <bean id="jobListener"
-        class="org.duracloud.snapshot.manager.spring.batch.SnapshotExecutionListener">
-    <constructor-arg ref="notificationManager"/>
-    <constructor-arg ref="snapshotRepo"/>
-    <constructor-arg ref="restorationRepo"/>
-    
-  </bean>
-   -->
-  
-  <!-- 
-  <bean id="blockingQueue" class="java.util.concurrent.LinkedBlockingQueue" />
-  <bean id="executor" class="java.util.concurrent.ThreadPoolExecutor">
-    <constructor-arg index="0" type="int" value="20"/>
-    <constructor-arg index="1" type="int" value="20"/>
-    <constructor-arg index="2" type="long" value="10"/>
-    <constructor-arg index="3" value="SECONDS"/>
-    <constructor-arg index="4" ref="blockingQueue"/>
-  </bean>
-  -->
-  
-  <!-- 
-  <bean id="taskExecutor"  lazy-init="default"
-        class="org.springframework.scheduling.concurrent.ConcurrentTaskExecutor">
-    <constructor-arg ref="executor"/>
-  </bean>
-   -->
-  
   <bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
-  
   
   <!-- stored job-metadata in database -->
   <bean id="jobRepository"  lazy-init="default"
@@ -52,17 +23,6 @@
     <property name="isolationLevelForCreate" value="ISOLATION_DEFAULT"/>
   </bean>
   
-  <bean id="snapshotJobManager" 
-        class="org.duracloud.snapshot.manager.spring.batch.SnapshotJobManagerImpl">
-        <constructor-arg ref="jobListener"/>
-        <constructor-arg ref="transactionManager"/>
-        <constructor-arg ref="taskExecutor"/>
-        <constructor-arg ref="snapshotRepo"/>
-        <constructor-arg ref="restorationRepo"/>
-        
-  </bean>
-
-
   <bean id="jobLauncher"  lazy-init="default"
         class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
     <property name="jobRepository" ref="jobRepository" />

@@ -29,7 +29,6 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.ApplicationContext;
@@ -60,16 +59,10 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
     private JobRepository jobRepository;
 
     @Mock
-    private JobExplorer jobExplorer;
-
-    @Mock
-    private JobLauncher jobLauncher;
-
-    @Mock
     private JobExecution jobExecution;
 
     @Mock
-    private SnapshotJobBuilder jobBuilder;
+    private JobLauncher jobLauncher;
 
     @Mock
     private Job job;
@@ -85,24 +78,28 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
 
     @Mock
     private SnapshotJobManagerConfig config;
-    
+
     @Mock
     private RestorationRepo restorationRepo;
-    
+
     @Mock
     private SnapshotRepo snapshotRepo;
 
+    @Mock
+    private SnapshotJobBuilder snapshotJobBuilder;
 
+    @Mock
+    private BatchJobBuilderManager builderManager;
 
     @Before
     public void setup() {
         manager =
-            new SnapshotJobManagerImpl(snapshotJobListener,
-                                       transactionManager,
-                                       taskExecutor,
-                                       snapshotRepo,
-                                       restorationRepo);
-        manager.setApplicationContext(context);
+            new SnapshotJobManagerImpl(snapshotRepo,
+                                       restorationRepo,
+                                       jobLauncher,
+                                       jobRepository,
+                                       builderManager);
+        manager.init(config);
     }
 
     @After
@@ -110,52 +107,29 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
         verifyAll();
     }
 
-    /*
-     * @Test public void testInit() {
-     * EasyMock.expect(context.getBean(SnapshotJobManager
-     * .JOB_REPOSITORY_KEY)).andReturn(jobRepository);
-     * EasyMock.expect(context.getBean
-     * (SnapshotJobManager.JOB_LAUNCHER_KEY)).andReturn(jobLauncher);
-     * replayAll();
-     * 
-     * //somehow the private fields (jobRepository and jobManager) are getting
-     * //set by the test framework - so initialize can't be tested.
-     * 
-     * manager.init(config);
-     * 
-     * }
-     */
-
     @Test
     public void testExecuteSnapshot() throws Exception {
 
-        EasyMock.expect(jobBuilder.build(snapshot,
-                                         config,
-                                         snapshotJobListener,
-                                         jobRepository,
-                                         jobLauncher,
-                                         transactionManager,
-                                         taskExecutor)).andReturn(job);
+        EasyMock.expect(snapshotJobBuilder.buildJob(snapshot, config))
+                .andReturn(job);
 
-        Capture<JobParameters> jobParams = new Capture<>();
+        EasyMock.expect(snapshotJobBuilder.buildJobParameters(snapshot))
+                .andReturn(new JobParameters());
 
         EasyMock.expect(jobLauncher.run(EasyMock.isA(Job.class),
-                                        EasyMock.capture(jobParams)))
+                                        EasyMock.isA(JobParameters.class)))
                 .andReturn(jobExecution);
 
         EasyMock.expect(jobExecution.getStatus())
                 .andReturn(BatchStatus.COMPLETED);
+
         setupSnapshotRepo();
-        
+
+        setupBuilderManager();
+
         replayAll();
 
-        
         manager.executeSnapshot(snapshotName);
-
-        JobParameters jobParameters = jobParams.getValue();
-
-        Assert.assertEquals(snapshotId,
-                            jobParameters.getLong(SnapshotConstants.OBJECT_ID));
 
     }
 
@@ -163,21 +137,37 @@ public class SnapshotJobManagerImplTest extends SnapshotTestBase {
      * 
      */
     private void setupSnapshotRepo() {
-        EasyMock.expect(snapshotRepo.findByName(snapshotName)).andReturn(snapshot);
-        EasyMock.expect(snapshot.getId()).andReturn(snapshotId);
+        EasyMock.expect(snapshotRepo.findByName(snapshotName))
+                .andReturn(snapshot);
     }
 
-    
+    /**
+     * 
+     */
+    private void setupBuilderManager() {
+        EasyMock.expect(builderManager.getBuilder(EasyMock.isA(Snapshot.class)))
+                .andReturn(snapshotJobBuilder);
+    }
+
     @Test
-    public void testGetSnapshotStatus() throws SnapshotNotFoundException, SnapshotException{
+    public void testGetSnapshotStatus()
+        throws SnapshotNotFoundException,
+            SnapshotException {
+
+        EasyMock.expect(snapshotJobBuilder.buildIdentifyingJobParameters(snapshot))
+                .andReturn(new JobParameters());
+        
+        setupBuilderManager();
+
         EasyMock.expect(jobRepository.getLastJobExecution(EasyMock.isA(String.class),
                                                           EasyMock.isA(JobParameters.class)))
                 .andReturn(jobExecution);
-        
-        EasyMock.expect(jobExecution.getStatus()).andReturn(BatchStatus.COMPLETED);
-        
+
+        EasyMock.expect(jobExecution.getStatus())
+                .andReturn(BatchStatus.COMPLETED);
+
         setupSnapshotRepo();
-        
+
         replayAll();
         Assert.assertNotNull(this.manager.getStatus(snapshotName));
     }

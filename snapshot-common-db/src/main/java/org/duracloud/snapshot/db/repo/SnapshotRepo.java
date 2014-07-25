@@ -32,5 +32,6 @@ public interface SnapshotRepo extends JpaRepository<Snapshot, Long> {
      * @return
      */
     public Snapshot findByName(String snapshotId);
+    
 
 }

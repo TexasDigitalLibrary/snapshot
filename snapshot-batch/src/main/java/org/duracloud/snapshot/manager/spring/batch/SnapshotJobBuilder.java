@@ -15,7 +15,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.duracloud.client.ContentStore;
 import org.duracloud.common.model.ContentItem;
@@ -34,22 +36,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.batch.core.JobParameter;
+import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.builder.SimpleJobBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.factory.SimpleStepFactoryBean;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * @author Daniel Bernstein Date: Feb 19, 2014
  */
-public class SnapshotJobBuilder {
+@Component
+public class SnapshotJobBuilder implements BatchJobBuilder<Snapshot> {
     private static Logger log = LoggerFactory.getLogger(SnapshotJobBuilder.class);
 
     private static final String MANIFEST_SHA256_TXT_FILE_NAME =
@@ -58,13 +64,30 @@ public class SnapshotJobBuilder {
     private static final String CONTENT_PROPERTIES_JSON_FILENAME =
         "content-properties.json";
 
-    public Job build(Snapshot snapshot,
-                     SnapshotJobManagerConfig config,
-                     JobExecutionListener jobListener,
-                     JobRepository jobRepository,
-                     JobLauncher jobLauncher,
-                     PlatformTransactionManager transactionManager,
-                     TaskExecutor taskExecutor) throws SnapshotException {
+    private JobExecutionListener jobListener;
+    private JobRepository jobRepository;
+    private PlatformTransactionManager transactionManager;
+    private TaskExecutor taskExecutor;
+    
+    @Autowired
+    public SnapshotJobBuilder(JobExecutionListener jobListener, 
+                              JobRepository jobRepository,
+                              PlatformTransactionManager transactionManager, 
+                              TaskExecutor taskExecutor) {
+
+        this.jobListener = jobListener;
+        this.jobRepository = jobRepository;
+        this.transactionManager = transactionManager;
+        this.taskExecutor = taskExecutor;
+    }
+
+    /* (non-Javadoc)
+     * @see org.duracloud.snapshot.manager.spring.batch.BatchJobBuilder#buildJob(java.lang.Object, org.duracloud.snapshot.manager.config.SnapshotJobManagerConfig)
+     */
+    @Override
+    public Job
+        buildJob(Snapshot snapshot, SnapshotJobManagerConfig config) throws SnapshotException {
+
         Job job;
         try {
             
@@ -140,6 +163,32 @@ public class SnapshotJobBuilder {
         return job;
     }
 
+    
+    /* (non-Javadoc)
+     * @see org.duracloud.snapshot.manager.spring.batch.BatchJobBuilder#buildIdentifyingJobParameters(java.lang.Object)
+     */
+    @Override
+    public JobParameters buildIdentifyingJobParameters(Snapshot snapshot) {
+        Map<String, JobParameter> map = createIdentifyingJobParameters(snapshot);
+        JobParameters params = new JobParameters(map);
+        return params;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.duracloud.snapshot.manager.spring.batch.BatchJobBuilder#buildJobParameters(java.lang.Object)
+     */
+    @Override
+    public JobParameters buildJobParameters(Snapshot snapshot) {
+        return buildIdentifyingJobParameters(snapshot);
+    }
+
+    private Map<String,JobParameter> createIdentifyingJobParameters(Snapshot snapshot) {
+        Map<String, JobParameter> map = new HashMap<>();
+        map.put(SnapshotConstants.OBJECT_ID, new JobParameter(snapshot.getId(), true));
+        return map;
+    }
+
+    
     /**
      * @param contentDir
      * @param file

@@ -7,15 +7,14 @@
  */
 package org.duracloud.snapshot.manager.spring.batch;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
 import org.duracloud.common.notification.NotificationManager;
 import org.duracloud.common.notification.NotificationType;
 import org.duracloud.snapshot.db.ContentDirUtils;
 import org.duracloud.snapshot.db.model.Restoration;
 import org.duracloud.snapshot.db.model.Snapshot;
 import org.duracloud.snapshot.db.model.SnapshotStatus;
+import org.duracloud.snapshot.db.repo.RestorationRepo;
+import org.duracloud.snapshot.db.repo.SnapshotRepo;
 import org.duracloud.snapshot.manager.SnapshotConstants;
 import org.duracloud.snapshot.manager.config.ExecutionListenerConfig;
 import org.slf4j.Logger;
@@ -40,14 +39,15 @@ public class SnapshotExecutionListener implements JobExecutionListener {
 
     @Autowired
     private NotificationManager notificationManager;
+    
+    @Autowired
+    private SnapshotRepo snapshotRepo;
+    
+    @Autowired
+    private RestorationRepo restorationRepo;
+    
     private ExecutionListenerConfig config;
     
-    /**
-     * 
-     */
-    public SnapshotExecutionListener() {
-        // TODO Auto-generated constructor stub
-    }
     
     /**
      * @param notificationManager the notificationManager to set
@@ -57,12 +57,20 @@ public class SnapshotExecutionListener implements JobExecutionListener {
     }
     
     
-
-    private EntityManager entityManager;
-    @PersistenceContext
-    public void setEntityManager(EntityManager entityManager) {
-        this.entityManager = entityManager;
+    /**
+     * @param restorationRepo the restorationRepo to set
+     */
+    public void setRestorationRepo(RestorationRepo restorationRepo) {
+        this.restorationRepo = restorationRepo;
     }
+    
+    /**
+     * @param snapshotRepo the snapshotRepo to set
+     */
+    public void setSnapshotRepo(SnapshotRepo snapshotRepo) {
+        this.snapshotRepo = snapshotRepo;
+    }
+    
 
     public void init(ExecutionListenerConfig config) {
         this.config = config;
@@ -83,9 +91,9 @@ public class SnapshotExecutionListener implements JobExecutionListener {
             //thread rather than being executed in the web request life cycle. (dbernstein)
             //As a workaround I'm injecting the entitymanager and using it directly.
             
-            Snapshot snapshot = entityManager.find(Snapshot.class, objectId);
+            Snapshot snapshot =  snapshotRepo.getOne(objectId);
             snapshot.setStatus(SnapshotStatus.TRANSFERRING_FROM_DURACLOUD);
-            entityManager.flush();
+            snapshotRepo.save(snapshot);
         }
     }
 
@@ -104,13 +112,13 @@ public class SnapshotExecutionListener implements JobExecutionListener {
             //thread rather than being executed in the web request life cycle. (dbernstein)
             //As a workaround I'm injecting the entitymanager and using it directly.
             
-            Snapshot snapshot = entityManager.find(Snapshot.class, objectId);
+            Snapshot snapshot = snapshotRepo.getOne(objectId);
             String snapshotName = snapshot.getName();
             String snapshotPath = ContentDirUtils.getDestinationPath(snapshot, config.getContentRoot());
             log.debug("Completed snapshot: {} with status: {}", snapshotName, status);
             handleAfterSnapshotJob(status, snapshot, snapshotPath);
         }else if(jobName.equals(SnapshotConstants.RESTORE_JOB_NAME)){
-            Restoration restoration = entityManager.find(Restoration.class, objectId);
+            Restoration restoration = restorationRepo.findOne(objectId);
             String restorationPath = ContentDirUtils.getSourcePath(restoration.getId(), config.getContentRoot());
             log.debug("Completed restoration: {} with status: {}", restoration.getId(), status);
             handleAfterRestorationJob(status, restoration, restorationPath);
@@ -178,7 +186,7 @@ public class SnapshotExecutionListener implements JobExecutionListener {
                       config.getAllEmailAddresses());
             
             snapshot.setStatus(SnapshotStatus.WAITING_FOR_DPN);
-            this.entityManager.flush();
+            snapshotRepo.save(snapshot);
         } else {
             // Job failed.  Email DuraSpace team about failed snapshot attempt.
             String subject =
