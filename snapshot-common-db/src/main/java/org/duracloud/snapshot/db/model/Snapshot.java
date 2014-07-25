@@ -39,7 +39,9 @@ public class Snapshot extends BaseEntity implements Comparator<Snapshot>{
     private Date endDate;
     @Enumerated(EnumType.STRING)
     private SnapshotStatus status;
-    
+    @Column(nullable=true, length = 512)
+    private String statusText;
+       
     /**
      * @return the snapshotName
      */
@@ -132,6 +134,18 @@ public class Snapshot extends BaseEntity implements Comparator<Snapshot>{
     @Override
     public int compare(Snapshot o1, Snapshot o2) {
         return o1.name.compareTo(o2.name);
+    }
+    /**
+     * @return the statusText
+     */
+    public String getStatusText() {
+        return statusText;
+    }
+    /**
+     * @param statusText the statusText to set
+     */
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
     }
 
     

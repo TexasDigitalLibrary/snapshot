@@ -185,8 +185,7 @@ public class SnapshotExecutionListener implements JobExecutionListener {
             sendEmail(subject, message,
                       config.getAllEmailAddresses());
             
-            snapshot.setStatus(SnapshotStatus.WAITING_FOR_DPN);
-            snapshotRepo.save(snapshot);
+            changeSnapshotStatus(snapshot,SnapshotStatus.WAITING_FOR_DPN,"");
         } else {
             // Job failed.  Email DuraSpace team about failed snapshot attempt.
             String subject =
@@ -198,8 +197,26 @@ public class SnapshotExecutionListener implements JobExecutionListener {
                 // TODO: Add details of failure in message
             sendEmail(subject, message,
                       config.getDuracloudEmailAddresses());
+            changeSnapshotStatus(snapshot,
+                                 SnapshotStatus.FAILED_TO_TRANSFER_FROM_DURACLOUD,
+                                 "batch job did not complete: batch status = "
+                                     + status);            
+            
         }
     }
+
+    /**
+     * @param snapshot
+     * @param string 
+     * @param waitingForDpn
+     */
+    private void changeSnapshotStatus(Snapshot snapshot,
+                                      SnapshotStatus status, String msg) {
+        snapshot.setStatus(status);
+        snapshot.setStatusText(msg);
+        snapshotRepo.save(snapshot);
+    }
+
 
     private void sendEmail(String subject, String msg, String... destinations) {
         notificationManager.sendNotification(NotificationType.EMAIL,

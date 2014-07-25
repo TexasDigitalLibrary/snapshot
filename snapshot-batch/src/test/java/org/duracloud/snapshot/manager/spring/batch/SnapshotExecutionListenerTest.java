@@ -110,10 +110,9 @@ public class SnapshotExecutionListenerTest extends SnapshotTestBase {
         expect(executionConfig.getAllEmailAddresses())
                 .andReturn(new String[]{dpnEmail, duracloudEmail});
 
-        expect(snapshotRepo.save(EasyMock.isA(Snapshot.class))).andReturn(snapshot);
         
         snapshot.setStatus(SnapshotStatus.WAITING_FOR_DPN);
-
+        expectLastCall();
         replayAll();
 
         executionListener.afterJob(jobExecution);
@@ -142,8 +141,10 @@ public class SnapshotExecutionListenerTest extends SnapshotTestBase {
         expect(executionConfig.getContentRoot()).andReturn(new File(contentDir));
         
         expect(snapshot.getName()).andReturn(snapshotName).atLeastOnce();
-
+        snapshot.setStatusText(isA(String.class));
         expectLastCall();
+
+        expect(snapshotRepo.save(EasyMock.isA(Snapshot.class))).andReturn(snapshot);
 
     }
 
@@ -167,6 +168,8 @@ public class SnapshotExecutionListenerTest extends SnapshotTestBase {
         expect(executionConfig.getDuracloudEmailAddresses())
                 .andReturn(new String[]{duracloudEmail});
 
+        snapshot.setStatus(SnapshotStatus.FAILED_TO_TRANSFER_FROM_DURACLOUD);
+        expectLastCall();
         replayAll();
 
         executionListener.afterJob(jobExecution);
