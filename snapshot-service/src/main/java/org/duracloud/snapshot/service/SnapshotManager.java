@@ -42,4 +42,12 @@ public interface SnapshotManager {
      * sent out to the user.
      */
     public void finalizeSnapshots();
+
+    /**
+     * @param snapshotId
+     * @param contentId
+     * @return
+     */
+    public Map<String, String> getContentItemProperties(String snapshotId,
+                                                        String contentId);
 }

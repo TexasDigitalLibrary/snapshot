@@ -5,13 +5,15 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.service.impl;
+package org.duracloud.snapshot.common.util;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
+
+
 
 /**
  * @author Daniel Bernstein Date: Jul 31, 2014

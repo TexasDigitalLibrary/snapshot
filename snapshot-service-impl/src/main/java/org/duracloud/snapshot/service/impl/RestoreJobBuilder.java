@@ -20,6 +20,7 @@ import org.duracloud.snapshot.db.model.DuracloudEndPointConfig;
 import org.duracloud.snapshot.db.model.Restoration;
 import org.duracloud.snapshot.service.RestoreManager;
 import org.duracloud.snapshot.service.SnapshotJobManagerConfig;
+import org.duracloud.snapshot.service.SnapshotManager;
 import org.duracloud.sync.endpoint.DuraStoreSyncEndpoint;
 import org.duracloud.sync.endpoint.SyncEndpoint;
 import org.slf4j.Logger;
@@ -51,6 +52,7 @@ public class RestoreJobBuilder implements BatchJobBuilder<Restoration> {
     private JobRepository jobRepository;
     private PlatformTransactionManager transactionManager;
     private TaskExecutor taskExecutor;
+    private SnapshotManager snapshotManager;
 
     private RestoreManager restoreManager;
     
@@ -59,13 +61,15 @@ public class RestoreJobBuilder implements BatchJobBuilder<Restoration> {
                               JobRepository jobRepository,
                               PlatformTransactionManager transactionManager, 
                               TaskExecutor taskExecutor,
-                              RestoreManager restoreManager) {
+                              RestoreManager restoreManager,
+                              SnapshotManager snapshotManager) {
 
         this.jobListener = jobListener;
         this.jobRepository = jobRepository;
         this.transactionManager = transactionManager;
         this.taskExecutor = taskExecutor;
         this.restoreManager = restoreManager;
+        this.snapshotManager = snapshotManager;
     }
     
     /* (non-Javadoc)
@@ -113,7 +117,8 @@ public class RestoreJobBuilder implements BatchJobBuilder<Restoration> {
                                endpoint,
                                contentStore,
                                destination.getSpaceId(),
-                               restoreManager);
+                               restoreManager, 
+                               snapshotManager);
 
             SimpleStepFactoryBean<File, File> stepFactory =
                 new SimpleStepFactoryBean<>();

@@ -125,8 +125,7 @@ public class SnapshotManagerImpl implements SnapshotManager {
         item.setSnapshot(snapshot);
         item.setContentIdHash(getIdChecksum(contentId));
 
-        String propString = PropertiesSerializer.serialize(props);
-        item.setMetadata(propString);
+        item.setMetadata(SnapshotContentItem.serializeMetadata(props));
         this.snapshotContentItemRepo.save(item);
     }
 
@@ -259,6 +258,22 @@ public class SnapshotManagerImpl implements SnapshotManager {
      */
     public void setStoreClientHelper(StoreClientHelper storeClientHelper) {
         this.storeClientHelper = storeClientHelper;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.duracloud.snapshot.service.SnapshotManager#getContentItemProperties(java.lang.String, java.lang.String)
+     */
+    @Override
+    public Map<String, String> getContentItemProperties(String snapshotId,
+                                                        String contentId) {
+        SnapshotContentItem item =  this.snapshotContentItemRepo.findBySnapshotNameAndContentId(snapshotId, contentId);
+        Map<String,String> props =  SnapshotContentItem.deserializeMetadata(item.getMetadata());
+        
+        log.debug("successfully retrieved snapshot content item props for {}/{}: {}",
+                  snapshotId,
+                  contentId,
+                  props);
+        return props;
     }
 
 }

@@ -8,16 +8,17 @@
 package org.duracloud.snapshot.db.model;
 
 import java.util.Comparator;
+import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.duracloud.snapshot.common.util.PropertiesSerializer;
 
 /**
  * @author Daniel Bernstein
@@ -111,6 +112,22 @@ public class SnapshotContentItem extends BaseEntity implements Comparator<Snapsh
     @Override
     public String toString() {
         return ToStringBuilder.reflectionToString(this);
+    }
+
+    /**
+     * @param props
+     * @return
+     */
+    public static String serializeMetadata(Map<String, String> props) {
+        return PropertiesSerializer.serialize(props);
+    }
+
+    /**
+     * @param props
+     * @return
+     */
+    public static Map<String,String> deserializeMetadata(String metadata) {
+        return PropertiesSerializer.deserialize(metadata);
     }
 
 }

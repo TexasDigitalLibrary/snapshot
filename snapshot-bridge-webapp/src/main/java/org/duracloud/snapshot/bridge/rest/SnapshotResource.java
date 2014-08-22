@@ -28,6 +28,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.httpclient.HttpStatus;
 import org.duracloud.snapshot.SnapshotNotFoundException;
+import org.duracloud.snapshot.common.util.PropertiesSerializer;
 import org.duracloud.snapshot.db.model.DuracloudEndPointConfig;
 import org.duracloud.snapshot.db.model.Snapshot;
 import org.duracloud.snapshot.db.model.SnapshotContentItem;
@@ -44,7 +45,6 @@ import org.duracloud.snapshot.dto.bridge.GetSnapshotListBridgeResult;
 import org.duracloud.snapshot.id.SnapshotIdentifier;
 import org.duracloud.snapshot.service.SnapshotJobManager;
 import org.duracloud.snapshot.service.SnapshotManager;
-import org.duracloud.snapshot.service.impl.PropertiesSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -287,7 +287,7 @@ public class SnapshotResource {
                 String metadata = item.getMetadata();
                 if(null != metadata) {
                     snapshotItem.setContentProperties(
-                        PropertiesSerializer.deserialize(metadata));
+                        SnapshotContentItem.deserializeMetadata(metadata));
                 }
                 snapshotItems.add(snapshotItem);
             }

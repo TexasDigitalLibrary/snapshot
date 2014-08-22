@@ -9,15 +9,19 @@ package org.duracloud.snapshot.service.impl;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import org.duracloud.client.ContentStore;
 import org.duracloud.common.retry.Retriable;
 import org.duracloud.common.retry.Retrier;
+import org.duracloud.common.util.ContentIdUtil;
 import org.duracloud.domain.Space;
 import org.duracloud.error.ContentStoreException;
 import org.duracloud.error.NotFoundException;
+import org.duracloud.snapshot.db.model.Restoration;
 import org.duracloud.snapshot.dto.RestoreStatus;
 import org.duracloud.snapshot.service.RestoreManager;
+import org.duracloud.snapshot.service.SnapshotManager;
 import org.duracloud.sync.endpoint.MonitoredFile;
 import org.duracloud.sync.endpoint.SyncEndpoint;
 import org.duracloud.sync.endpoint.SyncResultType;
@@ -44,6 +48,8 @@ public class SyncWriter
     private String destinationSpaceId;
     private RestoreManager restoreManager;
     private Long restorationId;
+    private SnapshotManager snapshotManager;
+    private String snapshotId;
     
     /**
      * @param endpoint
@@ -52,7 +58,7 @@ public class SyncWriter
      * @param restoreRepo 
      * @param string 
      */
-    public SyncWriter(Long restorationId, File watchDir, SyncEndpoint endpoint, ContentStore contentStore, String destinationSpaceId, RestoreManager restoreManager) {
+    public SyncWriter(Long restorationId, File watchDir, SyncEndpoint endpoint, ContentStore contentStore, String destinationSpaceId, RestoreManager restoreManager, SnapshotManager snapshotManager ) {
         super();
         this.endpoint = endpoint;
         this.watchDir = watchDir;
@@ -60,6 +66,7 @@ public class SyncWriter
         this.destinationSpaceId = destinationSpaceId;
         this.restoreManager = restoreManager;
         this.restorationId = restorationId;
+        this.snapshotManager = snapshotManager;
     }
 
     //StepExecution Interface
@@ -118,6 +125,12 @@ public class SyncWriter
      */
     @Override
     public void write(List<? extends File> items) throws Exception {
+
+        if(snapshotId == null){
+            Restoration restoration = restoreManager.get(restorationId);
+            snapshotId = restoration.getSnapshot().getName();
+        }
+        
         log.info("starting to write {} file(s) to duracloud", items.size());
         for(final File file : items){
             new Retrier().execute(new Retriable() {
@@ -137,6 +150,21 @@ public class SyncWriter
                     log.info("successfully uploaded {}: result = {}",
                              file.getAbsolutePath(),
                              result);
+                    
+                    String contentId =
+                        ContentIdUtil.getContentId(file, watchDir);
+                    Map<String, String> properties =
+                        snapshotManager.getContentItemProperties(snapshotId,
+                                                                 contentId);
+                    
+                    contentStore.setContentProperties(destinationSpaceId,
+                                                      contentId,
+                                                      properties);
+                    
+                    log.info("successfully updated properties for {} in {}: properties: {}",
+                             contentId,
+                             destinationSpaceId,
+                             properties);
                     
                     return result;
                 }

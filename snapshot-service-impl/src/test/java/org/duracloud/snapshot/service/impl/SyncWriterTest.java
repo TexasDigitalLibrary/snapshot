@@ -10,17 +10,21 @@ package org.duracloud.snapshot.service.impl;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.duracloud.client.ContentStore;
 import org.duracloud.domain.Space;
 import org.duracloud.error.NotFoundException;
 import org.duracloud.snapshot.common.test.SnapshotTestBase;
 import org.duracloud.snapshot.db.model.Restoration;
+import org.duracloud.snapshot.db.model.Snapshot;
 import org.duracloud.snapshot.dto.RestoreStatus;
 import org.duracloud.snapshot.service.InvalidStateTransitionException;
 import org.duracloud.snapshot.service.RestorationNotFoundException;
 import org.duracloud.snapshot.service.RestoreManager;
+import org.duracloud.snapshot.service.SnapshotManager;
 import org.duracloud.sync.endpoint.MonitoredFile;
 import org.duracloud.sync.endpoint.SyncEndpoint;
 import org.duracloud.sync.endpoint.SyncResultType;
@@ -57,9 +61,17 @@ public class SyncWriterTest extends SnapshotTestBase{
 
     @Mock
     private Restoration restoration;
+
+    @Mock
+    private Snapshot snapshot;
     
     private Long restorationId = 1000l;
+
+    @Mock
+    private SnapshotManager snapshotManager;
     
+    private String destinationSpaceId = "spaceId";
+    private String snapshotId = "snapshot-id";
 
     /* (non-Javadoc)
      * @see org.duracloud.snapshot.common.test.SnapshotTestBase#setup()
@@ -67,10 +79,19 @@ public class SyncWriterTest extends SnapshotTestBase{
     @Override
     public void setup() {
         super.setup();
-        watchDir = new File(System.getProperty("java.io.tmpdir") + File.separator + System.currentTimeMillis());
+        watchDir =
+            new File(System.getProperty("java.io.tmpdir")
+                + File.separator + System.currentTimeMillis());
         watchDir.mkdirs();
         watchDir.deleteOnExit();
-        writer = new SyncWriter(restorationId, watchDir, endpoint, contentStore, "spaceId", restoreManager); 
+        writer =
+            new SyncWriter(restorationId,
+                           watchDir,
+                           endpoint,
+                           contentStore,
+                           destinationSpaceId,
+                           restoreManager,
+                           snapshotManager);
     }
     
     /* (non-Javadoc)
@@ -92,10 +113,22 @@ public class SyncWriterTest extends SnapshotTestBase{
         List<File> files = new ArrayList<>();
         int count = 3;
         for(int i = 0; i < count; i++){
-            File file = new File(watchDir, "");
+            File file = new File(watchDir, "file-" + i);
             files.add(file);
         }
 
+        EasyMock.expect(restoreManager.get(restorationId)).andReturn(restoration);
+        EasyMock.expect(restoration.getSnapshot()).andReturn(snapshot);
+        EasyMock.expect(snapshot.getName()).andReturn(snapshotId);
+
+        Map<String,String> contentProperties = new HashMap<>();
+
+        EasyMock.expect(snapshotManager.getContentItemProperties(EasyMock.eq(snapshotId),
+                                                                 EasyMock.isA(String.class)))
+                .andReturn(contentProperties).times(count);
+        
+        contentStore.setContentProperties(EasyMock.eq(destinationSpaceId), EasyMock.isA(String.class), EasyMock.eq(contentProperties));
+        EasyMock.expectLastCall().times(count);
         
         EasyMock.expect(endpoint.syncFileAndReturnDetailedResult(EasyMock.isA(MonitoredFile.class),
                                                                  EasyMock.isA(File.class)))
@@ -116,15 +149,14 @@ public class SyncWriterTest extends SnapshotTestBase{
         
         contentStore.createSpace(EasyMock.isA(String.class));
         EasyMock.expectLastCall();
-
+        
         setupBeforeTransition();
         replayAll();
         
         this.writer.beforeStep(stepExecution);
         
     }
-    
-    
+
     @Test
     public void testAfterStep() throws Exception {
         
@@ -156,7 +188,6 @@ public class SyncWriterTest extends SnapshotTestBase{
     @Test
     public void testBeforeStepSpaceAlreadyExistsEmpty() throws Exception {
         setupBeforeTransition();
-
         Space space = new Space();
         space.setContentIds(new ArrayList<String>());
 

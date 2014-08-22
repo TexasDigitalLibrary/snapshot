@@ -5,7 +5,7 @@
  *
  *     http://duracloud.org/license/
  */
-package org.duracloud.snapshot.service.impl;
+package org.duracloud.snapshot.common.util;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +20,7 @@ import org.junit.Test;
 public class PropertiesSerializerTest {
 
     /**
-     * Test method for {@link org.duracloud.snapshot.service.impl.PropertiesSerializer#serialize(java.util.Map)}.
+     * Test method for {@link org.duracloud.snapshot.common.util.PropertiesSerializer#serialize(java.util.Map)}.
      */
     @Test
     public void test() {
