@@ -2,7 +2,7 @@
 
 <configuration debug="true" scan="true">
   <jmxConfigurator/>
-  <property name="LOG_FILENAME" value="/var/log/duracloud/bridge.log" />
+  <property name="LOG_FILENAME" value="${duracloud.home}/logs/bridge.log" />
 
   <appender name="DURACLOUD" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <!--See also http://logback.qos.ch/manual/appenders.html#RollingFileAppender-->
@@ -25,7 +25,7 @@
     </encoder>
   </appender>
 
-  <logger name="org.duracloud" level="INFO">
+  <logger name="org.duracloud" level="DEBUG">
     <appender-ref ref="DURACLOUD"/>
   </logger>
 
