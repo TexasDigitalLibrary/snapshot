@@ -2,8 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <version>3.0.0</version>
-  <groupId>org.duracloud.snapshot</groupId>
+  <version>4.0.0</version>
   <artifactId>bridge</artifactId>
   <packaging>war</packaging>
   <name>DuraCloud to Bridge Web Application</name>
@@ -11,7 +10,7 @@
   <parent>
     <groupId>org.duracloud.snapshot</groupId>
     <artifactId>snapshot-parent</artifactId>
-    <version>3.0.0</version>
+    <version>4.0.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -50,7 +49,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
-        <version>2.4</version>
+        <version>3.4.0</version>
         <configuration>
           <warName>${project.artifactId}-${project.version}</warName>
           <webResources>
@@ -64,7 +63,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.10</version>
+        <version>3.6.1</version>
         <executions>
           <execution>
             <id>copy-build-artifact</id>
@@ -158,6 +157,10 @@
           <artifactId>bean-validator</artifactId>
           <groupId>org.glassfish.hk2.external</groupId>
         </exclusion>
+        <exclusion>
+          <groupId>org.javassist</groupId>
+          <artifactId>javassist</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -216,8 +219,8 @@
     </dependency>
 
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
     </dependency>
 
     <dependency>
